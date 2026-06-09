@@ -1,1 +1,57 @@
-[]
+[
+  {
+    "id": "staff_astana_hub_contact",
+    "hub": "Astana Hub",
+    "city": "Астана",
+    "region": "astana",
+    "name": "Команда Astana Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@astana.hub",
+    "contact": null,
+    "source": "instagram_profile_demo"
+  },
+  {
+    "id": "staff_zhambyl_hub_contact",
+    "hub": "Zhambyl Hub",
+    "city": "Тараз",
+    "region": "zhambyl",
+    "name": "Команда Zhambyl Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@zhambyl_hub",
+    "contact": null,
+    "source": "instagram_profile_demo"
+  },
+  {
+    "id": "staff_pavlodar_hub_contact",
+    "hub": "Pavlodar Hub",
+    "city": "Павлодар",
+    "region": "pavlodar",
+    "name": "Команда Pavlodar Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@pavlodar.hub",
+    "contact": null,
+    "source": "instagram_profile_demo"
+  },
+  {
+    "id": "staff_ulytau_hub_contact",
+    "hub": "Ulytau Hub",
+    "city": "Жезказган",
+    "region": "ulytau",
+    "name": "Команда Ulytau Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@ulytau.hub",
+    "contact": null,
+    "source": "instagram_profile_demo"
+  },
+  {
+    "id": "staff_almaty_hub_contact",
+    "hub": "Almaty Hub",
+    "city": "Алматы",
+    "region": "almaty",
+    "name": "Команда Almaty Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@almaty_hub",
+    "contact": null,
+    "source": "instagram_profile_demo"
+  }
+]

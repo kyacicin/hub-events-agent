@@ -2,38 +2,9 @@ import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { HUB_ACCOUNTS, type HubAccount } from "@/lib/hubAccounts";
+import type { EventFormat, HubEvent, HubStaff } from "@/lib/schemas";
 
-export type EventFormat = "offline" | "online" | "hybrid";
-
-export type HubEvent = {
-  id: string;
-  hub: string;
-  instagram: string;
-  city: string;
-  region: string;
-  title: string;
-  date: string;
-  time: string | null;
-  format: EventFormat;
-  address: string | null;
-  zoom_link?: string | null;
-  description: string;
-  hashtags: string[];
-  source_post_url: string;
-  parsed_at: string;
-};
-
-export type HubStaff = {
-  id: string;
-  hub: string;
-  city: string;
-  region: string;
-  name: string;
-  role: string | null;
-  instagram: string | null;
-  contact: string | null;
-  source: string;
-};
+export type { EventFormat, HubEvent, HubStaff } from "@/lib/schemas";
 
 type ApifyInstagramPost = {
   id?: string;
