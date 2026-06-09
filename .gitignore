@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+data/raw_posts.json
+data/dataset_instagram-scraper_*.json
 
 # debug
 npm-debug.log*

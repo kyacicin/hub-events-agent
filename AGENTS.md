@@ -187,7 +187,7 @@ Hub Events Agent — это AI-агент на базе Claude API, которы
 
 ## Логика фильтрации по региону
 
-Агент определяет регион пользователя через Claude — модель понимает синонимы и варианты написания:
+Агент определяет регион пользователя через детерминированный mapping в `src/lib/filter.ts`. Claude может помочь понять свободный текст, но финальная фильтрация данных использует region key:
 
 ```
 "Тараз" → region: "zhambyl"
@@ -198,7 +198,7 @@ Hub Events Agent — это AI-агент на базе Claude API, которы
 "Астана" → region: "astana"
 ```
 
-Нормализация происходит внутри LLM — не через хардкод. Claude сопоставляет текст пользователя с ключами регионов из базы данных.
+`filter.ts` хранит city → region mapping, поддерживает русские, казахские и базовые latin-варианты городов, а затем фильтрует `events.json` по `region` и `date >= today`.
 
 ---
 
@@ -217,6 +217,7 @@ Hub Events Agent — это AI-агент на базе Claude API, которы
 const HUB_ACCOUNTS = [
   { instagram: "turkistan.hub",  hub: "Turkistan Hub", region: "turkistan",        city: "Туркестан" },
   { instagram: "batys.hub",      hub: "Batys Hub",     region: "west_kazakhstan",  city: "Уральск" },
+  { instagram: "astana.hub",     hub: "Astana Hub",    region: "astana",           city: "Астана" },
   { instagram: "almaty_hub",     hub: "Almaty Hub",    region: "almaty",           city: "Алматы" },
   { instagram: "zhambyl_hub",    hub: "Zhambyl Hub",   region: "zhambyl",          city: "Тараз" },
   { instagram: "alatau.hub",     hub: "Alatau Hub",    region: "alatau",           city: "Алатау" },
