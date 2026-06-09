@@ -86,7 +86,7 @@ Hub Events Agent — это AI-агент на базе Claude API, которы
   {
     "id": "evt_001",
     "hub": "Zhambyl Hub",
-    "instagram": "@zhambylinnovation",
+    "instagram": "@zhambyl_hub",
     "city": "Тараз",
     "region": "zhambyl",
     "title": "Demo Day: предынкубация",
@@ -102,7 +102,7 @@ Hub Events Agent — это AI-агент на базе Claude API, которы
   {
     "id": "evt_002",
     "hub": "Zhambyl Hub",
-    "instagram": "@zhambylinnovation",
+    "instagram": "@zhambyl_hub",
     "city": "Тараз",
     "region": "zhambyl",
     "title": "Cursor AI воркшоп",
@@ -110,7 +110,7 @@ Hub Events Agent — это AI-агент на базе Claude API, которы
     "time": "11:00",
     "format": "online",
     "address": null,
-    "zoom_link": "ссылка в @zhambylinnovation",
+    "zoom_link": "ссылка в @zhambyl_hub",
     "description": "Практический воркшоп по работе с Cursor AI для разработчиков.",
     "hashtags": ["#CursorAI", "#Workshop"],
     "source_post_url": "https://instagram.com/p/...",
@@ -215,12 +215,24 @@ Hub Events Agent — это AI-агент на базе Claude API, которы
 
 ```typescript
 const HUB_ACCOUNTS = [
-  { instagram: "astanahub",        region: "astana",    city: "Астана" },
-  { instagram: "almatyhub",        region: "almaty",    city: "Алматы" },
-  { instagram: "shymkenthub",      region: "shymkent",  city: "Шымкент" },
-  { instagram: "zhambylinnovation",region: "zhambyl",   city: "Тараз" },
-  { instagram: "aktobehub",        region: "aktobe",    city: "Актобе" },
-  { instagram: "karagandahub",     region: "karaganda", city: "Караганда" },
+  { instagram: "turkistan.hub",  hub: "Turkistan Hub", region: "turkistan",        city: "Туркестан" },
+  { instagram: "batys.hub",      hub: "Batys Hub",     region: "west_kazakhstan",  city: "Уральск" },
+  { instagram: "almaty_hub",     hub: "Almaty Hub",    region: "almaty",           city: "Алматы" },
+  { instagram: "zhambyl_hub",    hub: "Zhambyl Hub",   region: "zhambyl",          city: "Тараз" },
+  { instagram: "alatau.hub",     hub: "Alatau Hub",    region: "alatau",           city: "Алатау" },
+  { instagram: "atyrau_it_hub",  hub: "Atyrau Hub",    region: "atyrau",           city: "Атырау" },
+  { instagram: "shymkent__hub",  hub: "Shymkent Hub",  region: "shymkent",         city: "Шымкент" },
+  { instagram: "qostanai.hub",   hub: "Qostanai Hub",  region: "kostanay",         city: "Костанай" },
+  { instagram: "pavlodar.hub",   hub: "Pavlodar Hub",  region: "pavlodar",         city: "Павлодар" },
+  { instagram: "oskemen.hub",    hub: "Oskemen Hub",   region: "east_kazakhstan",  city: "Оскемен" },
+  { instagram: "aqtobe.hub",     hub: "Aqtobe Hub",    region: "aktobe",           city: "Актобе" },
+  { instagram: "aqmola.hub",     hub: "Aqmola Hub",    region: "aqmola",           city: "Кокшетау" },
+  { instagram: "mangystau.hub",  hub: "Mangystau Hub", region: "mangystau",        city: "Актау" },
+  { instagram: "kyzylordahub",   hub: "Kyzylorda Hub", region: "kyzylorda",        city: "Кызылорда" },
+  { instagram: "ulytau.hub",     hub: "Ulytau Hub",    region: "ulytau",           city: "Жезказган" },
+  { instagram: "sko_hub",        hub: "SKO Hub",       region: "north_kazakhstan", city: "Петропавловск" },
+  { instagram: "jetisu_digital", hub: "Jetisu Digital",region: "jetisu",           city: "Талдыкорган" },
+  { instagram: "semey.hub",      hub: "Semey Hub",     region: "abai",             city: "Семей" },
 ];
 ```
 
@@ -266,7 +278,7 @@ ${post.caption}
 │ Финальные презентации стартапов        │
 │ первого потока.                        │
 │                                        │
-│ Zhambyl Hub · @zhambylinnovation       │
+│ Zhambyl Hub · @zhambyl_hub             │
 └────────────────────────────────────────┘
 ```
 
@@ -298,7 +310,7 @@ ${post.caption}
 ## Расширение агента
 
 Чтобы добавить новый хаб:
-1. Добавь аккаунт в `HUB_ACCOUNTS` в `lib/scraper.ts`
+1. Добавь аккаунт в `HUB_ACCOUNTS` в `src/lib/hubAccounts.ts`
 2. Запусти `npm run scrape` — данные подтянутся автоматически
 3. Новый регион начнёт работать без изменений в коде агента
 
@@ -307,4 +319,3 @@ ${post.caption}
 2. Агент автоматически отвечает на языке пользователя (логика в system prompt)
 
 ---
-
