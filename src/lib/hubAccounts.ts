@@ -19,6 +19,12 @@ export const HUB_ACCOUNTS = [
     city: "Уральск",
   },
   {
+    hub: "Astana Hub",
+    instagram: "astana.hub",
+    region: "astana",
+    city: "Астана",
+  },
+  {
     hub: "Almaty Hub",
     instagram: "almaty_hub",
     region: "almaty",

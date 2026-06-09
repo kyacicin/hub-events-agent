@@ -217,6 +217,7 @@ Hub Events Agent — это AI-агент на базе Claude API, которы
 const HUB_ACCOUNTS = [
   { instagram: "turkistan.hub",  hub: "Turkistan Hub", region: "turkistan",        city: "Туркестан" },
   { instagram: "batys.hub",      hub: "Batys Hub",     region: "west_kazakhstan",  city: "Уральск" },
+  { instagram: "astana.hub",     hub: "Astana Hub",    region: "astana",           city: "Астана" },
   { instagram: "almaty_hub",     hub: "Almaty Hub",    region: "almaty",           city: "Алматы" },
   { instagram: "zhambyl_hub",    hub: "Zhambyl Hub",   region: "zhambyl",          city: "Тараз" },
   { instagram: "alatau.hub",     hub: "Alatau Hub",    region: "alatau",           city: "Алатау" },
