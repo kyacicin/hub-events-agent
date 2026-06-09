@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import type { HubEvent } from "@/lib/schemas";
 
 type EventCardProps = {
@@ -5,62 +6,75 @@ type EventCardProps = {
 };
 
 const FORMAT_LABELS: Record<HubEvent["format"], string> = {
-  offline: "ОФЛАЙН",
-  online: "ОНЛАЙН",
-  hybrid: "ГИБРИД",
+  offline: "Offline",
+  online: "Online",
+  hybrid: "Hybrid",
 };
 
 const FORMAT_STYLES: Record<HubEvent["format"], string> = {
-  offline: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200",
-  online:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200",
-  hybrid:
-    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200",
+  offline: "bg-[#eef5ff] text-[#2466a8]",
+  online: "bg-[#eefaf2] text-[#4ca364]",
+  hybrid: "bg-[#fff7df] text-[#916b14]",
 };
 
 export function EventCard({ event }: EventCardProps) {
+  const location = event.address ?? event.zoom_link ?? "Link in hub profile";
+
   return (
-    <article className="rounded-md border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <article className="rounded-xl border border-[#e0e6df] bg-white p-3 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <span
-            className={`inline-flex rounded border px-2 py-1 text-[11px] font-semibold uppercase tracking-normal ${FORMAT_STYLES[event.format]}`}
-          >
-            {FORMAT_LABELS[event.format]}
-          </span>
-          <h3 className="mt-3 text-sm font-semibold leading-5 text-zinc-950 dark:text-zinc-50">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${FORMAT_STYLES[event.format]}`}
+            >
+              {FORMAT_LABELS[event.format]}
+            </span>
+            <span className="text-xs font-semibold text-[#687168]">{event.city}</span>
+          </div>
+          <h3 className="mt-2 text-sm font-bold leading-5 text-[#202124]">
             {event.title}
           </h3>
         </div>
-        <div className="shrink-0 text-left text-xs text-zinc-500 sm:text-right dark:text-zinc-400">
-          <p>{formatDate(event.date)}</p>
-          {event.time ? <p className="mt-1">{event.time}</p> : null}
-        </div>
+        <a
+          href={event.source_post_url}
+          target="_blank"
+          rel="noreferrer"
+          className="grid size-9 shrink-0 place-items-center rounded-full border border-[#e0e6df] text-[#687168] transition hover:border-[#4ca364] hover:text-[#4ca364]"
+          aria-label="Open source post"
+        >
+          <Icon name="link" className="size-4" />
+        </a>
       </div>
 
-      <dl className="mt-4 grid gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-        <div>
-          <dt className="sr-only">Адрес</dt>
-          <dd>{event.address ?? event.zoom_link ?? "Ссылка в профиле хаба"}</dd>
+      <dl className="mt-3 grid gap-2 text-xs leading-5 text-[#5e6860]">
+        <div className="flex gap-2">
+          <Icon name="calendar" className="mt-0.5 size-4 text-[#8a938b]" />
+          <dd>
+            {formatDate(event.date)}
+            {event.time ? `, ${event.time}` : ""}
+          </dd>
         </div>
-        <div>
-          <dt className="sr-only">Описание</dt>
-          <dd className="leading-6">{event.description}</dd>
+        <div className="flex gap-2">
+          <Icon
+            name={event.format === "online" ? "globe" : "map"}
+            className="mt-0.5 size-4 text-[#8a938b]"
+          />
+          <dd>{location}</dd>
         </div>
       </dl>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3 text-xs text-zinc-500 dark:border-zinc-900 dark:text-zinc-400">
-        <span>{event.hub}</span>
-        <span aria-hidden="true">/</span>
-        <a
-          href={`https://www.instagram.com/${event.instagram.replace("@", "")}/`}
-          target="_blank"
-          rel="noreferrer"
-          className="underline-offset-2 hover:underline"
-        >
-          {event.instagram}
-        </a>
-      </div>
+      <p className="mt-3 text-sm leading-5 text-[#3f4741]">{event.description}</p>
+
+      <a
+        href={`https://www.instagram.com/${event.instagram.replace("@", "")}/`}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-3 inline-flex items-center gap-1 break-all text-xs font-bold text-[#4ca364] underline-offset-2 hover:underline"
+      >
+        <Icon name="instagram" className="size-4" />
+        {event.instagram}
+      </a>
     </article>
   );
 }
