@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { dateKey } from "@/lib/filter";
+import { generateGeminiText } from "@/lib/gemini";
 import type { HubEvent, HubStaff } from "@/lib/schemas";
 
 export type ChatRole = "user" | "assistant";
@@ -18,7 +18,7 @@ type AgentRequest = {
   city: string | null;
 };
 
-export async function callClaudeAgent({
+export async function callGeminiAgent({
   messages,
   events,
   staff,
@@ -26,11 +26,8 @@ export async function callClaudeAgent({
   region,
   city,
 }: AgentRequest) {
-  const client = new Anthropic({ apiKey: requiredEnv("ANTHROPIC_API_KEY") });
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-20250514";
-  const response = await client.messages.create({
-    model,
-    max_tokens: 1000,
+  return generateGeminiText({
+    maxOutputTokens: 1000,
     system: buildSystemPrompt({
       events,
       staff,
@@ -38,16 +35,18 @@ export async function callClaudeAgent({
       region,
       city,
     }),
-    messages: messages.map((message) => ({
-      role: message.role,
-      content: message.content,
-    })),
+    messages: toGeminiMessages(messages),
   });
+}
 
-  return response.content
-    .map((block) => (block.type === "text" ? block.text : ""))
-    .join("\n")
-    .trim();
+function toGeminiMessages(messages: ChatMessage[]) {
+  const mapped = messages.map((message) => ({
+    role: message.role === "assistant" ? ("model" as const) : ("user" as const),
+    content: message.content,
+  }));
+  const firstUserIndex = mapped.findIndex((message) => message.role === "user");
+
+  return firstUserIndex === -1 ? mapped : mapped.slice(firstUserIndex);
 }
 
 export function buildSystemPrompt({
@@ -173,16 +172,6 @@ export function isStaffQuestion(text: string) {
   return /(команд|сотрудник|директор|менеджер|контакт|staff|team|қызметкер|команда|басшы|директор|байланыс)/i.test(
     text,
   );
-}
-
-function requiredEnv(name: string) {
-  const value = process.env[name];
-
-  if (!value) {
-    throw new Error(`${name} is required.`);
-  }
-
-  return value;
 }
 
 function formatLabel(format: HubEvent["format"]) {

@@ -1,7 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { generateGeminiText } from "../src/lib/gemini";
 import { HUB_ACCOUNTS } from "../src/lib/hubAccounts";
 
 type RawPost = {
@@ -47,15 +47,13 @@ const today = formatDateInAlmaty(new Date());
 const hubMap = buildHubMap();
 
 async function extractEventFromPost(
-  client: Anthropic,
-  model: string,
   post: RawPost,
   caption: string,
 ) {
   const publishedAt = postPublishedAt(post) ?? "не указана";
-  const response = await client.messages.create({
-    model,
-    max_tokens: 700,
+  const text = await generateGeminiText({
+    maxOutputTokens: 700,
+    temperature: 0,
     messages: [
       {
         role: "user",
@@ -82,7 +80,6 @@ ${caption}`,
       },
     ],
   });
-  const text = response.content[0]?.type === "text" ? response.content[0].text : "";
   const clean = text.replace(/```json|```/g, "").trim();
 
   if (!clean || clean === "null") {
@@ -112,8 +109,6 @@ ${caption}`,
 async function main() {
   await loadLocalEnv();
 
-  const client = new Anthropic({ apiKey: requiredEnv("ANTHROPIC_API_KEY") });
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-20250514";
   const rawPosts = JSON.parse(
     await readFile(path.join(process.cwd(), "data/raw_posts.json"), "utf8"),
   ) as RawPost[];
@@ -137,7 +132,7 @@ async function main() {
     processed += 1;
     console.log(`Обрабатываю пост от @${username}...`);
 
-    const event = await extractEventFromPost(client, model, post, caption);
+    const event = await extractEventFromPost(post, caption);
 
     if (event && isUpcoming(event.date)) {
       events.push({
@@ -292,16 +287,6 @@ function postPublishedAt(post: RawPost) {
   }
 
   return null;
-}
-
-function requiredEnv(name: string) {
-  const value = process.env[name];
-
-  if (!value) {
-    throw new Error(`${name} is required.`);
-  }
-
-  return value;
 }
 
 function formatDateInAlmaty(date: Date) {

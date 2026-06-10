@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { generateGeminiText } from "@/lib/gemini";
 import { HUB_ACCOUNTS, type HubAccount } from "@/lib/hubAccounts";
 import type { EventFormat, HubEvent, HubStaff } from "@/lib/schemas";
 
@@ -57,7 +58,6 @@ export type ScrapeResult = {
   written: boolean;
 };
 
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const APIFY_API_BASE_URL = "https://api.apify.com/v2";
 
 export async function scrapeHubEvents(
@@ -77,7 +77,7 @@ export async function scrapeHubEvents(
       continue;
     }
 
-    const extracted = await extractPostWithClaude(post, account, today);
+    const extracted = await extractPostWithGemini(post, account, today);
 
     if (extracted.is_event && extracted.event.title && extracted.event.date) {
       const event = toHubEvent(post, account, extracted, parsedAt);
@@ -151,137 +151,26 @@ async function fetchInstagramPosts(): Promise<ApifyInstagramPost[]> {
   return data as ApifyInstagramPost[];
 }
 
-async function extractPostWithClaude(
+async function extractPostWithGemini(
   post: ApifyInstagramPost,
   account: HubAccount,
   today: string,
 ): Promise<ExtractedPost> {
-  const apiKey = requiredEnv("ANTHROPIC_API_KEY");
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-20250514";
   const caption = post.caption ?? post.text ?? "";
-  const response = await fetch(ANTHROPIC_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 1200,
-      tools: [
-        {
-          name: "extract_instagram_post",
-          description:
-            "Extract event and staff data from a regional hub Instagram post.",
-          input_schema: {
-            type: "object",
-            properties: {
-              is_event: {
-                type: "boolean",
-                description: "True when the post announces a concrete event.",
-              },
-              event: {
-                type: "object",
-                properties: {
-                  title: { anyOf: [{ type: "string" }, { type: "null" }] },
-                  date: {
-                    anyOf: [{ type: "string" }, { type: "null" }],
-                    description: "Event date in YYYY-MM-DD.",
-                  },
-                  time: {
-                    anyOf: [{ type: "string" }, { type: "null" }],
-                    description: "Event time in HH:MM.",
-                  },
-                  format: {
-                    anyOf: [
-                      { enum: ["offline", "online", "hybrid"] },
-                      { type: "null" },
-                    ],
-                  },
-                  address: { anyOf: [{ type: "string" }, { type: "null" }] },
-                  zoom_link: { anyOf: [{ type: "string" }, { type: "null" }] },
-                  description: {
-                    anyOf: [{ type: "string" }, { type: "null" }],
-                  },
-                },
-                required: [
-                  "title",
-                  "date",
-                  "time",
-                  "format",
-                  "address",
-                  "zoom_link",
-                  "description",
-                ],
-                additionalProperties: false,
-              },
-              staff: {
-                type: "array",
-                description:
-                  "People from the hub team mentioned in this post, if any.",
-                items: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    role: { anyOf: [{ type: "string" }, { type: "null" }] },
-                    instagram: {
-                      anyOf: [{ type: "string" }, { type: "null" }],
-                    },
-                    contact: { anyOf: [{ type: "string" }, { type: "null" }] },
-                  },
-                  required: ["name", "role", "instagram", "contact"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: ["is_event", "event", "staff"],
-            additionalProperties: false,
-          },
-        },
-      ],
-      tool_choice: { type: "tool", name: "extract_instagram_post" },
-      messages: [
-        {
-          role: "user",
-          content: buildExtractionPrompt(post, account, caption, today),
-        },
-      ],
-    }),
+  const text = await generateGeminiText({
+    maxOutputTokens: 1200,
+    temperature: 0,
+    messages: [
+      {
+        role: "user",
+        content: buildExtractionPrompt(post, account, caption, today),
+      },
+    ],
   });
+  const parsed = extractJson(text);
 
-  if (!response.ok) {
-    throw new Error(
-      `Claude extraction failed: ${response.status} ${await response.text()}`,
-    );
-  }
-
-  const message = (await response.json()) as {
-    content?: Array<{
-      type: string;
-      name?: string;
-      input?: unknown;
-      text?: string;
-    }>;
-  };
-  const toolUse = message.content?.find(
-    (block) => block.type === "tool_use" && block.name === "extract_instagram_post",
-  );
-
-  if (toolUse?.input && isExtractedPost(toolUse.input)) {
-    return normalizeExtraction(toolUse.input);
-  }
-
-  const text = message.content
-    ?.map((block) => (block.type === "text" ? block.text ?? "" : ""))
-    .join("\n");
-
-  if (text) {
-    const parsed = extractJson(text);
-
-    if (parsed && isExtractedPost(parsed)) {
-      return normalizeExtraction(parsed);
-    }
+  if (parsed && isExtractedPost(parsed)) {
+    return normalizeExtraction(parsed);
   }
 
   return emptyExtraction();
@@ -295,6 +184,7 @@ function buildExtractionPrompt(
 ) {
   return `
 Из этого Instagram-поста извлеки данные о событии и сотрудниках хаба.
+Верни только валидный JSON без markdown и пояснений.
 Если это не анонс конкретного события, поставь is_event=false и null в полях event.
 Если дата относительная ("завтра", "в эту пятницу"), рассчитай ее от сегодняшней даты.
 
@@ -305,6 +195,27 @@ function buildExtractionPrompt(
 - address null для онлайн-событий без адреса
 - staff заполняй только если пост явно называет человека из команды хаба
 - не выдумывай людей, контакты, даты или адреса
+- JSON должен иметь ровно такую структуру:
+{
+  "is_event": true,
+  "event": {
+    "title": "string или null",
+    "date": "YYYY-MM-DD или null",
+    "time": "HH:MM или null",
+    "format": "offline|online|hybrid или null",
+    "address": "string или null",
+    "zoom_link": "string или null",
+    "description": "string или null"
+  },
+  "staff": [
+    {
+      "name": "string",
+      "role": "string или null",
+      "instagram": "string или null",
+      "contact": "string или null"
+    }
+  ]
+}
 
 Хаб: ${account.hub}
 Город: ${account.city}

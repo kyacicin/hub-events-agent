@@ -562,7 +562,7 @@ function MessageBubble({ message }: { message: UiMessage }) {
           <p className="whitespace-pre-line">{message.content}</p>
           {!isUser && message.modelStatus === "fallback" ? (
             <p className="mt-3 border-t border-[#edf0ec] pt-2 text-xs text-[#9a6b22]">
-              Ответ собран локально без Claude API.
+              Ответ собран локально без Gemini API.
             </p>
           ) : null}
         </div>

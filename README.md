@@ -50,7 +50,7 @@ Hub Events Agent — чат-интерфейс, который отвечает 
 ┌─────────▼───────────────────────────────────────────┐
 │                 BACKEND (Next.js API Routes)         │
 │  ┌──────────────────────────────────────────────┐   │
-│  │              AI Agent (Claude API)           │   │
+│  │              AI Agent (Gemini API)           │   │
 │  │  • Понимает свободный текст                  │   │
 │  │  • Определяет регион пользователя            │   │
 │  │  • Фильтрует события по городу               │   │
@@ -72,7 +72,7 @@ Hub Events Agent — чат-интерфейс, который отвечает 
 | Слой | Технология | Назначение |
 |------|-----------|-----------|
 | Frontend | Next.js + React + Tailwind | Чат-интерфейс, карточки событий |
-| AI Agent | Claude API (claude-sonnet-4) | Понимание запросов, региональная фильтрация |
+| AI Agent | Gemini API (`gemini-3.5-flash`) | Понимание запросов, региональная фильтрация |
 | Парсер | Apify Instagram Scraper | Сбор постов из Instagram-аккаунтов хабов |
 | Хранилище | JSON-файлы / Vercel KV | Данные о событиях и сотрудниках |
 | Хостинг | Vercel | Деплой + cron jobs для обновления данных |
@@ -96,14 +96,15 @@ hub-events-agent/
 │       ├── hubAccounts.ts    # Instagram-аккаунты хабов
 │       ├── schemas.ts        # Схемы events.json и staff.json
 │       ├── agent.ts          # Логика AI агента
+│       ├── gemini.ts         # Gemini API client helper
 │       ├── scraper.ts        # Apify интеграция
 │       └── filter.ts         # Фильтрация по региону
 ├── data/
 │   ├── events.json           # База событий (обновляется cron)
 │   └── staff.json            # База сотрудников хабов
 ├── scripts/
-│   ├── scrape.ts             # Скрипт парсинга (Apify + Claude)
-│   └── process.ts            # Обработка data/raw_posts.json через Claude
+│   ├── scrape.ts             # Скрипт парсинга (Apify + Gemini)
+│   └── process.ts            # Обработка data/raw_posts.json через Gemini
 ├── vercel.json               # Cron конфигурация
 ├── AGENTS.md                 # Документация агента
 └── README.md
@@ -162,9 +163,9 @@ cp .env.example .env.local
 
 Заполни `.env.local`:
 ```env
-ANTHROPIC_API_KEY=your_anthropic_api_key
+GEMINI_API_KEY=your_gemini_api_key
 APIFY_API_TOKEN=your_apify_token
-ANTHROPIC_MODEL=claude-sonnet-4-20250514
+GEMINI_MODEL=gemini-3.5-flash
 APIFY_INSTAGRAM_ACTOR_ID=apify/instagram-scraper
 APIFY_RESULTS_LIMIT=5
 APIFY_ONLY_POSTS_NEWER_THAN=30 days
@@ -173,7 +174,7 @@ SCRAPE_SECRET=optional_secret_for_api_route
 ```
 
 ```bash
-# 4. Запусти полный парсер (Apify + Claude, соберёт данные в data/)
+# 4. Запусти полный парсер (Apify + Gemini, соберёт данные в data/)
 npm run scrape
 
 # Если raw posts уже сохранены в data/raw_posts.json,
@@ -201,7 +202,7 @@ npm i -g vercel
 vercel
 
 # Добавь env переменные в Vercel Dashboard:
-# ANTHROPIC_API_KEY, APIFY_API_TOKEN
+# GEMINI_API_KEY, APIFY_API_TOKEN
 ```
 
 Cron-задача для авто-обновления настраивается в `vercel.json`:
@@ -249,9 +250,9 @@ const tarazEvents = filterEvents(events as HubEvent[], {
 
 ## Chat API and UI
 
-- `POST /api/chat` принимает `message` или историю `messages`, загружает `data/events.json` и `data/staff.json`, определяет регион из текста, фильтрует данные и вызывает Claude API.
+- `POST /api/chat` принимает `message` или историю `messages`, загружает `data/events.json` и `data/staff.json`, определяет регион из текста, фильтрует данные и вызывает Gemini API.
 - `src/lib/agent.ts` собирает system prompt с релевантными `EVENTS_JSON`, `STAFF_JSON` и текущей датой. Ответ выбирает русский или казахский язык по последнему сообщению пользователя.
-- Если Claude API временно недоступен, route возвращает локальный fallback по тем же отфильтрованным данным, чтобы UI оставался тестируемым.
+- Если Gemini API временно недоступен, route возвращает локальный fallback по тем же отфильтрованным данным, чтобы UI оставался тестируемым.
 - `src/components/ChatInterface.tsx` отображает message bubbles и передаёт структурированные события в `EventCard`.
 
 ---
@@ -270,7 +271,7 @@ const tarazEvents = filterEvents(events as HubEvent[], {
 ## Стек технологий
 
 - **Frontend:** Next.js 16, React, TypeScript, Tailwind CSS
-- **AI:** Anthropic Claude API (`claude-sonnet-4-20250514`)
+- **AI:** Gemini API (`gemini-3.5-flash`)
 - **Парсер:** Apify Instagram Scraper
 - **Хостинг:** Vercel (с cron jobs)
 - **Данные:** JSON-файлы (events.json, staff.json)

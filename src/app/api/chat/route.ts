@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import eventsData from "../../../../data/events.json";
 import staffData from "../../../../data/staff.json";
 import {
-  callClaudeAgent,
+  callGeminiAgent,
   fallbackAgentReply,
   type ChatMessage,
 } from "@/lib/agent";
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     let modelStatus: "ok" | "fallback" = "ok";
 
     try {
-      reply = await callClaudeAgent({
+      reply = await callGeminiAgent({
         messages,
         events,
         staff,
