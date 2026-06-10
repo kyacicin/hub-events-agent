@@ -1,13 +1,13 @@
-import eventsData from "../../data/events.json";
 import { ChatInterface } from "@/components/ChatInterface";
+import { readEvents } from "@/lib/dataStore";
 import { filterUpcomingEvents } from "@/lib/filter";
 import { HUB_ACCOUNTS } from "@/lib/hubAccounts";
-import { isHubEvent } from "@/lib/schemas";
 
-const events = (eventsData as unknown[]).filter(isHubEvent);
+// Re-read the durable store every 5 minutes so cron updates surface without a redeploy.
+export const revalidate = 300;
 
-export default function Home() {
-  const upcomingEvents = filterUpcomingEvents(events);
+export default async function Home() {
+  const upcomingEvents = filterUpcomingEvents(await readEvents());
 
   return (
     <ChatInterface

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { writeData, type StorageBackend } from "@/lib/dataStore";
 import { generateGeminiText } from "@/lib/gemini";
 import { HUB_ACCOUNTS, type HubAccount } from "@/lib/hubAccounts";
 import type { EventFormat, HubEvent, HubStaff } from "@/lib/schemas";
@@ -46,7 +47,7 @@ export type ExtractedPost = {
 };
 
 type ScrapeOptions = {
-  writeToDisk?: boolean;
+  persist?: boolean;
   now?: Date;
   extractor?: InstagramPostExtractor;
 };
@@ -73,6 +74,7 @@ export type ScrapeResult = {
   rawPostsCount: number;
   parsedPostsCount: number;
   written: boolean;
+  backend: StorageBackend | "none";
 };
 
 const APIFY_API_BASE_URL = "https://api.apify.com/v2";
@@ -87,9 +89,10 @@ export async function scrapeHubEvents(
     extractor: options.extractor,
   });
 
-  if (options.writeToDisk ?? true) {
-    await writeScrapeData(result.events, result.staff);
+  if (options.persist ?? true) {
+    const { backend } = await writeData(result.events, result.staff);
     result.written = true;
+    result.backend = backend;
   }
 
   return result;
@@ -138,6 +141,7 @@ export async function processInstagramPosts(
     rawPostsCount: rawPosts.length,
     parsedPostsCount: events.length + staff.length,
     written: false,
+    backend: "none",
   };
 }
 

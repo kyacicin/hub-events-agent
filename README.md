@@ -206,16 +206,21 @@ npm i -g vercel
 vercel
 
 # Добавь env переменные в Vercel Dashboard:
-# GEMINI_API_KEY
+# GEMINI_API_KEY, APIFY_API_TOKEN, SCRAPE_SECRET
+# (KV_REST_API_URL / KV_REST_API_TOKEN добавятся сами при подключении Vercel KV)
 ```
 
 На локальной машине `npm run scrape` записывает результат в:
 - `data/events.json`
 - `data/staff.json`
 
-`POST /api/scrape` предназначен для защищённого локального/manual запуска и требует заголовок `x-scrape-secret` со значением `SCRAPE_SECRET`. На Vercel endpoint возвращает `501`, пока не подключено durable-хранилище: filesystem serverless-функций не является постоянным хранилищем, а статические импорты `data/*.json` не увидят новые данные без редеплоя.
+`POST /api/scrape` защищён заголовком `x-scrape-secret` со значением `SCRAPE_SECRET` и пишет в durable storage через `src/lib/dataStore.ts`:
 
-Для настоящего production auto-refresh нужно добавить KV/Postgres/Blob storage, писать туда результат Apify+Gemini и читать events/staff в runtime.
+- если заданы `KV_REST_API_URL` и `KV_REST_API_TOKEN` (Vercel KV / Upstash) — данные пишутся в KV, а `/api/chat` и главная страница читают их в runtime (главная — с ISR `revalidate = 300`), поэтому cron-обновления видны без редеплоя;
+- локально (без KV) запись идёт в `data/*.json`, а чтение — из bundled-seed;
+- на Vercel без KV запись осознанно падает с понятной ошибкой, а не молча теряет результат в эфемерной serverless-FS.
+
+Чтобы включить production auto-refresh, подключи Vercel KV (или Upstash Redis) к проекту — переменные `KV_REST_API_URL` / `KV_REST_API_TOKEN` подставляются автоматически.
 
 ---
 
@@ -257,7 +262,7 @@ const tarazEvents = filterEvents(events as HubEvent[], {
 -  **Актуальные события** — только предстоящие мероприятия, отсортированные по дате
 -  **Команда хаба** — директора, менеджеры, контакты («кто директор?», «с кем по обучению?»)
 -  **Карточки событий** — структурированный вывод с форматом, адресом, временем
--  **Обновление данных** — локальный/manual Apify+Gemini refresh; production auto-refresh требует durable storage
+-  **Обновление данных** — Apify+Gemini refresh с записью в durable storage (Vercel KV) и runtime-чтением; локально работает на bundled-seed без KV
 -  **Двуязычность** — интерфейс и ответы на русском и казахском языках
 
 ---

@@ -18,18 +18,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (process.env.VERCEL === "1") {
-    return NextResponse.json(
-      {
-        error:
-          "Production scraping needs durable storage before Apify/Gemini runs are enabled.",
-      },
-      { status: 501 },
-    );
-  }
-
   try {
-    const result = await scrapeHubEvents({ writeToDisk: true });
+    // Persists to Vercel KV when configured, otherwise the local filesystem.
+    // On Vercel without a KV store, writeData throws a clear error instead of
+    // discarding the scrape into the ephemeral serverless filesystem.
+    const result = await scrapeHubEvents({ persist: true });
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
