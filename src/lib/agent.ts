@@ -86,11 +86,37 @@ export function buildSystemPrompt({
 Сегодняшняя дата: ${today}
 
 EVENTS_JSON:
-${JSON.stringify(events, null, 2)}
+${JSON.stringify(events.map(toPromptEvent), null, 2)}
 
 STAFF_JSON:
-${JSON.stringify(staff, null, 2)}
+${JSON.stringify(staff.map(toPromptStaff), null, 2)}
 `.trim();
+}
+
+function toPromptEvent(event: HubEvent) {
+  return {
+    hub: event.hub,
+    instagram: event.instagram,
+    city: event.city,
+    title: event.title,
+    date: event.date,
+    time: event.time,
+    format: event.format,
+    address: event.address,
+    zoom_link: event.zoom_link ?? null,
+    description: event.description,
+  };
+}
+
+function toPromptStaff(person: HubStaff) {
+  return {
+    hub: person.hub,
+    city: person.city,
+    name: person.name,
+    role: person.role,
+    instagram: person.instagram,
+    contact: person.contact,
+  };
 }
 
 export function fallbackAgentReply({

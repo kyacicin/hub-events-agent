@@ -7,7 +7,7 @@ import type { EventFormat, HubEvent, HubStaff } from "@/lib/schemas";
 
 export type { EventFormat, HubEvent, HubStaff } from "@/lib/schemas";
 
-type ApifyInstagramPost = {
+export type ApifyInstagramPost = {
   id?: string;
   shortCode?: string;
   caption?: string;
@@ -26,7 +26,7 @@ type ApifyInstagramPost = {
   };
 };
 
-type ExtractedPost = {
+export type ExtractedPost = {
   is_event: boolean;
   event: {
     title: string | null;
@@ -48,7 +48,24 @@ type ExtractedPost = {
 type ScrapeOptions = {
   writeToDisk?: boolean;
   now?: Date;
+  extractor?: InstagramPostExtractor;
 };
+
+type ProcessPostsOptions = {
+  now?: Date;
+  extractor?: InstagramPostExtractor;
+};
+
+type ScrapeDataWriteOptions = {
+  eventsPath?: string;
+  staffPath?: string;
+};
+
+export type InstagramPostExtractor = (
+  post: ApifyInstagramPost,
+  account: HubAccount,
+  today: string,
+) => Promise<ExtractedPost>;
 
 export type ScrapeResult = {
   events: HubEvent[];
@@ -63,10 +80,29 @@ const APIFY_API_BASE_URL = "https://api.apify.com/v2";
 export async function scrapeHubEvents(
   options: ScrapeOptions = {},
 ): Promise<ScrapeResult> {
+  const rawPosts = await fetchInstagramPosts();
+
+  const result = await processInstagramPosts(rawPosts, {
+    now: options.now,
+    extractor: options.extractor,
+  });
+
+  if (options.writeToDisk ?? true) {
+    await writeScrapeData(result.events, result.staff);
+    result.written = true;
+  }
+
+  return result;
+}
+
+export async function processInstagramPosts(
+  rawPosts: ApifyInstagramPost[],
+  options: ProcessPostsOptions = {},
+): Promise<ScrapeResult> {
   const now = options.now ?? new Date();
   const parsedAt = now.toISOString();
   const today = formatDateInAlmaty(now);
-  const rawPosts = await fetchInstagramPosts();
+  const extractor = options.extractor ?? extractPostWithGemini;
   const events: HubEvent[] = [];
   const staff: HubStaff[] = [];
 
@@ -77,7 +113,7 @@ export async function scrapeHubEvents(
       continue;
     }
 
-    const extracted = await extractPostWithGemini(post, account, today);
+    const extracted = await extractor(post, account, today);
 
     if (extracted.is_event && extracted.event.title && extracted.event.date) {
       const event = toHubEvent(post, account, extracted, parsedAt);
@@ -94,7 +130,7 @@ export async function scrapeHubEvents(
     }
   }
 
-  const result: ScrapeResult = {
+  return {
     events: dedupeEvents(events).sort((a, b) =>
       `${a.date} ${a.time ?? ""}`.localeCompare(`${b.date} ${b.time ?? ""}`),
     ),
@@ -103,13 +139,6 @@ export async function scrapeHubEvents(
     parsedPostsCount: events.length + staff.length,
     written: false,
   };
-
-  if (options.writeToDisk ?? true) {
-    await writeScrapeData(result.events, result.staff);
-    result.written = true;
-  }
-
-  return result;
 }
 
 async function fetchInstagramPosts(): Promise<ApifyInstagramPost[]> {
@@ -315,12 +344,16 @@ function dedupeStaff(staff: HubStaff[]) {
   ).sort((a, b) => `${a.region} ${a.name}`.localeCompare(`${b.region} ${b.name}`));
 }
 
-async function writeScrapeData(events: HubEvent[], staff: HubStaff[]) {
+export async function writeScrapeData(
+  events: HubEvent[],
+  staff: HubStaff[],
+  options: ScrapeDataWriteOptions = {},
+) {
   const dataDir = path.join(process.cwd(), "data");
   await mkdir(dataDir, { recursive: true });
   await Promise.all([
-    writeJson(path.join(dataDir, "events.json"), events),
-    writeJson(path.join(dataDir, "staff.json"), staff),
+    writeJson(options.eventsPath ?? path.join(dataDir, "events.json"), events),
+    writeJson(options.staffPath ?? path.join(dataDir, "staff.json"), staff),
   ]);
 }
 

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --import tsx --test tests/*.test.ts",
     "scrape": "tsx scripts/scrape.ts",
     "process:posts": "tsx scripts/process.ts"
   },

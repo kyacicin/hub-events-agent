@@ -206,10 +206,12 @@ Hub Events Agent — это AI-агент на базе Gemini API, которы
 
 ### Как работает
 
-1. **Триггер:** cron-задача на Vercel (`0 9 * * *`) → `GET /api/scrape`
+1. **Триггер:** защищённый manual/local запуск → `POST /api/scrape` или `npm run scrape`
 2. **Apify запрос:** отправляется задача на Instagram Scraper Actor
-3. **Обработка:** посты фильтруются, из них извлекаются данные о событиях
-4. **Сохранение:** `data/events.json` и `data/staff.json` обновляются
+3. **Обработка:** посты фильтруются, из них извлекаются данные о событиях и команде
+4. **Сохранение:** локально обновляются `data/events.json` и `data/staff.json`
+
+На Vercel production scraping отключён до подключения durable storage. Serverless filesystem не является постоянным хранилищем, а статические импорты `data/*.json` не увидят новые данные без редеплоя. Для production auto-refresh нужно подключить KV/Postgres/Blob, писать результат туда и читать данные в runtime.
 
 ### Какие Instagram-аккаунты парсятся
 
@@ -297,6 +299,7 @@ ${post.caption}
 | `GEMINI_API_KEY` | aistudio.google.com | Gemini API для агента и парсинга |
 | `GEMINI_MODEL` | ai.google.dev | Модель Gemini, по умолчанию `gemini-3.5-flash` |
 | `APIFY_API_TOKEN` | console.apify.com | Instagram Scraper |
+| `SCRAPE_SECRET` | локально сгенерированный secret | Защита `POST /api/scrape` |
 
 ---
 
@@ -313,7 +316,7 @@ ${post.caption}
 
 Чтобы добавить новый хаб:
 1. Добавь аккаунт в `HUB_ACCOUNTS` в `src/lib/hubAccounts.ts`
-2. Запусти `npm run scrape` — данные подтянутся автоматически
+2. Запусти `npm run scrape` локально или manual production refresh после подключения durable storage
 3. Новый регион начнёт работать без изменений в коде агента
 
 Чтобы добавить новый язык интерфейса:
