@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import eventsData from "../../../../data/events.json";
-import staffData from "../../../../data/staff.json";
 import {
   callGeminiAgent,
   fallbackAgentReply,
   type ChatMessage,
 } from "@/lib/agent";
+import { readEvents, readStaff } from "@/lib/dataStore";
 import {
   dateKey,
   filterEvents,
@@ -13,12 +12,9 @@ import {
   regionFromText,
 } from "@/lib/filter";
 import { HUB_ACCOUNTS } from "@/lib/hubAccounts";
-import { isHubEvent, isHubStaff } from "@/lib/schemas";
 
 export const runtime = "nodejs";
-
-const EVENTS = (eventsData as unknown[]).filter(isHubEvent);
-const STAFF = (staffData as unknown[]).filter(isHubStaff);
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
@@ -39,8 +35,12 @@ export async function POST(request: Request) {
     const today = dateKey(new Date());
     const region = detectRegion(messages);
     const city = cityForRegion(region);
-    const events = region ? filterEvents(EVENTS, { region, today }) : [];
-    const staff = region ? filterStaff(STAFF, { region }) : [];
+    const [allEvents, allStaff] = await Promise.all([
+      readEvents(),
+      readStaff(),
+    ]);
+    const events = region ? filterEvents(allEvents, { region, today }) : [];
+    const staff = region ? filterStaff(allStaff, { region }) : [];
     let reply: string;
     let modelStatus: "ok" | "fallback" = "ok";
 
