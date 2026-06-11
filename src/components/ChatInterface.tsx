@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   FormEvent,
   KeyboardEvent,
@@ -169,7 +170,14 @@ export function ChatInterface({
       <header className="sticky top-0 z-30 border-b border-[#e3e5e2] bg-white">
         <div className="flex h-20 items-center gap-4 px-5 sm:px-8">
           <div className="flex w-[220px] shrink-0 items-center gap-3">
-            <AstanaLogo />
+            <Image
+              src="/astanahub_logo.avif"
+              alt="Astana Hub"
+              width={48}
+              height={48}
+              className="h-12 w-12 rounded-full object-contain"
+              priority
+            />
             <span className="text-xl font-semibold tracking-[-0.01em]">
               astana hub
             </span>
@@ -334,16 +342,6 @@ export function ChatInterface({
         <Icon name="message" className="size-8" />
       </button>
     </main>
-  );
-}
-
-function AstanaLogo() {
-  return (
-    <span className="relative grid size-12 place-items-center rounded-full">
-      <span className="absolute size-12 rounded-full bg-black/10" />
-      <span className="absolute size-9 rounded-full bg-black/15" />
-      <span className="size-5 rounded-full bg-[#111]" />
-    </span>
   );
 }
 

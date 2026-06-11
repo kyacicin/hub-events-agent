@@ -1,6 +1,7 @@
 "use client";
 
-import { Network, Sun, Moon } from 'lucide-react';
+import Image from 'next/image';
+import { Sun, Moon } from 'lucide-react';
 import { HubOption, HubRegion } from '../types';
 import { HUB_LOCATIONS } from '../data';
 import { LANGS, Lang } from '../i18n';
@@ -35,8 +36,15 @@ export default function GlassmorphicHeader({
       {/* Brand & Connection State */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-emerald-400 p-[1px] flex items-center justify-center shadow-lg shadow-blue-500/10">
-          <div className="w-full h-full rounded-[11px] bg-white dark:bg-neutral-950 flex items-center justify-center">
-            <Network className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+          <div className="relative w-full h-full overflow-hidden rounded-[11px] bg-white dark:bg-neutral-950">
+            <Image
+              src="/astanahub_logo.avif"
+              alt="Astana Hub"
+              fill
+              sizes="40px"
+              className="object-contain p-1.5"
+              priority
+            />
           </div>
         </div>
         <div>
