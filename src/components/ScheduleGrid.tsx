@@ -3,32 +3,33 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Clock, MapPin, Sparkles, Filter, ExternalLink } from 'lucide-react';
-import { getSchedule } from '../data';
-import { HubCity, TimeSlot, HubEvent, Weekday } from '../types';
+import { getSchedule, hasMapRoute } from '../data';
+import { HubOption, HubRegion, TimeSlot, UiEvent, Weekday } from '../types';
 
 interface ScheduleGridProps {
-  initialCity: HubCity;
-  onShowDirections?: (event: HubEvent) => void;
+  events: UiEvent[];
+  hubs: HubOption[];
+  initialRegion: HubRegion;
+  onShowDirections?: (event: UiEvent) => void;
 }
 
-export default function ScheduleGrid({ initialCity, onShowDirections }: ScheduleGridProps) {
-  const [selectedCity, setSelectedCity] = useState<HubCity>(initialCity);
+export default function ScheduleGrid({ events, hubs, initialRegion, onShowDirections }: ScheduleGridProps) {
+  const [selectedRegion, setSelectedRegion] = useState<HubRegion>(initialRegion);
   const [activePreview, setActivePreview] = useState<TimeSlot | null>(null);
 
-  const cities: HubCity[] = ['Astana', 'Zhambyl', 'Pavlodar', 'Taraz', 'Kyzylorda'];
-  const fullSchedule = getSchedule(selectedCity);
+  const fullSchedule = getSchedule(selectedRegion, events);
 
   // Group by days
   const days: Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const fullDayName: Record<Weekday, string> = {
-    Mon: 'Monday',
-    Tue: 'Tuesday',
-    Wed: 'Wednesday',
-    Thu: 'Thursday',
-    Fri: 'Friday',
-    Sat: 'Saturday',
-    Sun: 'Sunday'
+    Mon: 'Понедельник',
+    Tue: 'Вторник',
+    Wed: 'Среда',
+    Thu: 'Четверг',
+    Fri: 'Пятница',
+    Sat: 'Суббота',
+    Sun: 'Воскресенье'
   };
 
   return (
@@ -53,20 +54,20 @@ export default function ScheduleGrid({ initialCity, onShowDirections }: Schedule
 
         {/* City Switcher Pill bar (Tennis inspired) */}
         <div className="flex flex-wrap gap-1.5 bg-neutral-950/80 p-1.5 rounded-2xl border border-neutral-800">
-          {cities.map((city) => (
+          {hubs.map((hub) => (
             <button
-              key={city}
+              key={hub.region}
               onClick={() => {
-                setSelectedCity(city);
+                setSelectedRegion(hub.region);
                 setActivePreview(null);
               }}
               className={`px-3 py-1 text-xs font-medium rounded-xl transition-all duration-300 ${
-                selectedCity === city
+                selectedRegion === hub.region
                   ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
               }`}
             >
-              {city} Hub
+              {hub.label} Hub
             </button>
           ))}
         </div>
@@ -87,7 +88,7 @@ export default function ScheduleGrid({ initialCity, onShowDirections }: Schedule
                 </span>
                 {!hasEvents && (
                   <span className="text-[10px] font-mono text-neutral-500 uppercase">
-                    No Scheduled Events
+                    Нет событий
                   </span>
                 )}
               </div>
@@ -150,7 +151,7 @@ export default function ScheduleGrid({ initialCity, onShowDirections }: Schedule
                 onClick={() => setActivePreview(null)}
                 className="text-neutral-500 hover:text-white text-xs px-2 py-1 rounded bg-neutral-900 border border-neutral-800"
               >
-                Close
+                Закрыть
               </button>
             </div>
 
@@ -158,11 +159,11 @@ export default function ScheduleGrid({ initialCity, onShowDirections }: Schedule
             <div className="flex flex-wrap items-center gap-4 mt-3 pt-2.5 border-t border-neutral-900 text-xs font-mono text-neutral-400">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 text-emerald-400" />
-                <span>{activePreview.day}, {activePreview.time}</span>
+                <span>{activePreview.event.day}, {activePreview.event.time || 'время уточняется'}</span>
               </span>
               <span className="flex items-center gap-1 text-emerald-400 font-semibold">
                 <Sparkles className="w-3" />
-                <span>{activePreview.event.format} format</span>
+                <span>{activePreview.event.format}</span>
               </span>
               <span className="flex items-center gap-1 text-neutral-500">
                 <MapPin className="w-3" />
@@ -171,27 +172,27 @@ export default function ScheduleGrid({ initialCity, onShowDirections }: Schedule
             </div>
 
             {/* Expanded Direct actions */}
-            {activePreview.event.format === 'OFFLINE' && onShowDirections && (
-              <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex gap-2">
+              {activePreview.event.format !== 'ONLINE' && hasMapRoute(activePreview.event.hub) && onShowDirections && (
                 <button
                   onClick={() => {
                     if (onShowDirections && activePreview.event) onShowDirections(activePreview.event);
                   }}
                   className="flex-1 text-center py-1.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-sans font-medium text-xs transition-all cursor-pointer"
                 >
-                  Show In-Chat Directions Plot
+                  Показать маршрут на карте
                 </button>
-                <a
-                  href={activePreview.event.instagramUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 flex items-center justify-center text-xs gap-1 transition-all"
-                >
-                  <ExternalLink className="w-3" />
-                  IG
-                </a>
-              </div>
-            )}
+              )}
+              <a
+                href={activePreview.event.instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 flex items-center justify-center text-xs gap-1 transition-all"
+              >
+                <ExternalLink className="w-3" />
+                Открыть пост
+              </a>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

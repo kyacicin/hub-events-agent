@@ -1,18 +1,18 @@
 "use client";
 
 import { Network } from 'lucide-react';
-import { HubCity } from '../types';
+import { HubOption, HubRegion } from '../types';
 import { HUB_LOCATIONS } from '../data';
 
 interface GlassmorphicHeaderProps {
-  activeCity: HubCity;
-  onCityChange: (city: HubCity) => void;
+  hubs: HubOption[];
+  activeRegion: HubRegion;
+  onRegionChange: (region: HubRegion) => void;
   isSimulating: boolean;
 }
 
-export default function GlassmorphicHeader({ activeCity, onCityChange, isSimulating }: GlassmorphicHeaderProps) {
-  const currentHub = HUB_LOCATIONS[activeCity];
-  const cities: HubCity[] = ['Astana', 'Zhambyl', 'Pavlodar', 'Taraz', 'Kyzylorda'];
+export default function GlassmorphicHeader({ hubs, activeRegion, onRegionChange, isSimulating }: GlassmorphicHeaderProps) {
+  const currentHub = HUB_LOCATIONS[activeRegion] ?? HUB_LOCATIONS['astana'];
 
   return (
     <header id="glass-header" className="sticky top-0 z-50 w-full bg-neutral-950/60 backdrop-blur-md border-b border-white/5 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300">
@@ -27,7 +27,7 @@ export default function GlassmorphicHeader({ activeCity, onCityChange, isSimulat
           <div className="flex items-center gap-2">
             <h1 className="text-base font-sans font-bold tracking-tight text-white">HubVibe Portal</h1>
             <span className="text-[9px] font-mono tracking-wider font-semibold text-blue-400 bg-blue-950/30 border border-blue-900/40 px-1.5 py-0.5 rounded uppercase">
-              v2.6
+              Astana Hub
             </span>
           </div>
           <div className="flex items-center gap-2 text-xs text-neutral-400 mt-0.5">
@@ -49,17 +49,17 @@ export default function GlassmorphicHeader({ activeCity, onCityChange, isSimulat
         <div className="flex items-center gap-1.5 bg-neutral-900/60 border border-neutral-800/80 p-1 rounded-2xl">
           <span className="text-[10px] font-mono text-neutral-500 px-2 uppercase tracking-tight">Active Hub</span>
           <div className="flex flex-wrap gap-1">
-            {cities.map((city) => (
+            {hubs.map((hub) => (
               <button
-                key={city}
-                onClick={() => onCityChange(city)}
+                key={hub.region}
+                onClick={() => onRegionChange(hub.region)}
                 className={`px-3 py-1 text-xs rounded-xl transition-all duration-300 focus:outline-none ${
-                  activeCity === city
+                  activeRegion === hub.region
                     ? 'bg-emerald-500 text-neutral-950 font-medium shadow-md shadow-emerald-500/10'
                     : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
                 }`}
               >
-                {city}
+                {hub.label}
               </button>
             ))}
           </div>

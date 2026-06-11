@@ -1,281 +1,245 @@
-// Demo data layer for the HubVibe Portal front end.
-// Event seeds mirror the shape of data/events.json (Instagram-parsed hub announcements)
-// remapped into the richer card model the glassmorphic UI consumes.
+// Data layer for the HubVibe Portal front end.
+// Adapts parsed Instagram data (src/lib/schemas.ts shapes) into the UI card
+// models, and holds presentation-only data: hub addresses, mini-map geometry
+// and the schedule grid builder. Everything here is client-safe (no node APIs).
 
-import { HubCity, HubEvent, HubLocation, TeamMember, TimeSlot, Weekday } from './types';
+import { HUB_ACCOUNTS } from '@/lib/hubAccounts';
+import type { HubEvent, HubStaff } from '@/lib/schemas';
+import {
+  HubLocation,
+  HubOption,
+  HubRegion,
+  TimeSlot,
+  UiEvent,
+  UiEventFormat,
+  UiMember,
+  Weekday,
+} from './types';
 
-export const HUB_LOCATIONS: Record<HubCity, HubLocation> = {
-  Astana: {
-    name: 'Astana Hub (HQ)',
-    fullAddress: 'Mangilik El Ave 55/8, EXPO C1, Astana',
-  },
-  Zhambyl: {
-    name: 'Zhambyl IT Hub',
-    fullAddress: 'Tole Bi Ave 35, Taraz, Zhambyl Region',
-  },
-  Pavlodar: {
-    name: 'Pavlodar IT Hub',
-    fullAddress: 'General Dyusenov St 80, 2nd floor, Pavlodar',
-  },
-  Taraz: {
-    name: 'Taraz Innovation Hub',
-    fullAddress: 'Tole Bi St 58, Hall 201, Taraz',
-  },
-  Kyzylorda: {
-    name: 'Kyzylorda IT Hub',
-    fullAddress: 'Aiteke Bi St 25, Kyzylorda',
-  },
+// ---------------------------------------------------------------------------
+// Hub directory
+// ---------------------------------------------------------------------------
+
+const HUB_ADDRESS_OVERRIDES: Record<string, string> = {
+  astana: 'пр. Мангилик Ел 55/8, павильон C1 EXPO, Астана',
+  zhambyl: 'пр. Толе би 35, Тараз',
+  pavlodar: 'ул. Генерала Дюсенова 80, 2 этаж, Павлодар',
 };
 
-export const EVENTS: HubEvent[] = [
-  {
-    id: 'evt_zhambyl_bootcamp',
-    title: 'AI Bootcamp: AI Tools for Developers',
-    description:
-      '15-day bootcamp covering AI tooling, no-code launches, dev environments, fullstack builders and agentic AI. Finale: Demo Day with project defenses.',
-    day: 'Wed, Jun 10',
-    weekday: 'Wed',
-    time: '14:00',
-    hub: 'Zhambyl',
-    format: 'OFFLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/p/DZKjZBPBMAv/',
-    locationName: 'Zhambyl Hub, Tole Bi Ave 35, Taraz',
-  },
-  {
-    id: 'evt_zhambyl_demo_day',
-    title: 'Demo Day: Pre-Incubation Cohort',
-    description:
-      'Final pitch presentations from the first pre-incubation cohort. Investors, mentors and the regional startup community in one hall.',
-    day: 'Sat, Jun 14',
-    weekday: 'Sat',
-    time: '14:00',
-    hub: 'Zhambyl',
-    format: 'OFFLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/zhambyl_hub/',
-    locationName: 'Zhambyl Hub, Tole Bi Ave 35, Taraz',
-  },
-  {
-    id: 'evt_pavlodar_higgsfield',
-    title: 'From Uber to Higgsfield: Building a World-Class AI Startup at Home',
-    description:
-      'Open online meetup with Ali Bazilov, Software Engineer at Higgsfield AI, on Big Tech, startup culture and opportunities in the AI industry.',
-    day: 'Thu, Jun 11',
-    weekday: 'Thu',
-    time: '17:00',
-    hub: 'Pavlodar',
-    format: 'ONLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/p/DZCumH8oYE5/',
-    locationName: 'Zoom — link in @pavlodar.hub bio',
-  },
-  {
-    id: 'evt_pavlodar_business',
-    title: 'BUSINESS UPGRADE',
-    description:
-      'Hands-on session for founders: safe handling of personal transfers, tax risk, and separating personal vs business finances.',
-    day: 'Thu, Jun 11',
-    weekday: 'Thu',
-    time: '18:00',
-    hub: 'Pavlodar',
-    format: 'OFFLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/p/DZUwILaoa2R/',
-    locationName: 'Pavlodar Hub, General Dyusenov St 80, 2nd floor',
-  },
-  {
-    id: 'evt_astana_accelerator',
-    title: 'Astana Innovations Accelerator 2026',
-    description:
-      'Applications open for IT projects ready to deploy solutions into Astana city infrastructure. Submission deadline: June 15, 2026.',
-    day: 'Mon, Jun 15',
-    weekday: 'Mon',
-    time: '11:00',
-    hub: 'Astana',
-    format: 'ONLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/p/DZFC2mrCBNn/',
-    locationName: 'Online — apply via astanahub.com',
-  },
-  {
-    id: 'evt_astana_founders_night',
-    title: 'Founders Night: EXPO Networking',
-    description:
-      'Evening networking mixer at the EXPO C1 campus. Founders, investors and hub residents — badge pickup from 18:30.',
-    day: 'Fri, Jun 19',
-    weekday: 'Fri',
-    time: '19:00',
-    hub: 'Astana',
-    format: 'OFFLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1511578314322-379afb476865?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/astana.hub/',
-    locationName: 'Astana Hub HQ, Mangilik El Ave 55/8',
-  },
-  {
-    id: 'evt_taraz_cursor',
-    title: 'Cursor AI Workshop',
-    description:
-      'Practical workshop on working with Cursor AI for developers: agent workflows, repo-scale edits and prompt patterns.',
-    day: 'Sat, Jun 20',
-    weekday: 'Sat',
-    time: '11:00',
-    hub: 'Taraz',
-    format: 'OFFLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/zhambyl_hub/',
-    locationName: 'Taraz Innovation Hub, Tole Bi St 58, Hall 201',
-  },
-  {
-    id: 'evt_taraz_hackathon',
-    title: 'Taraz Open Hackathon: Smart City Track',
-    description:
-      '24-hour hackathon on city-data APIs. Teams of 2-5, mentors on site, 1M KZT prize pool from regional partners.',
-    day: 'Sun, Jun 21',
-    weekday: 'Sun',
-    time: '09:00',
-    hub: 'Taraz',
-    format: 'OFFLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/zhambyl_hub/',
-    locationName: 'Taraz Innovation Hub, Tole Bi St 58',
-  },
-  {
-    id: 'evt_kyzylorda_ai101',
-    title: 'AI 101: Intro Lecture for Students',
-    description:
-      'Introductory lecture series on machine learning fundamentals for university students. Registration free, seats limited.',
-    day: 'Tue, Jun 16',
-    weekday: 'Tue',
-    time: '16:00',
-    hub: 'Kyzylorda',
-    format: 'OFFLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/kyzylordahub/',
-    locationName: 'Kyzylorda IT Hub, Aiteke Bi St 25',
-  },
-  {
-    id: 'evt_kyzylorda_online_pitch',
-    title: 'Online Pitch Practice with HQ Mentors',
-    description:
-      'Remote pitch rehearsal session: Astana HQ mentors give live feedback on regional startup decks over video link.',
-    day: 'Thu, Jun 18',
-    weekday: 'Thu',
-    time: '18:00',
-    hub: 'Kyzylorda',
-    format: 'ONLINE',
-    imageUrl:
-      'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=640&q=80&auto=format&fit=crop',
-    instagramUrl: 'https://www.instagram.com/kyzylordahub/',
-    locationName: 'Zoom — link in @kyzylordahub bio',
-  },
+export const HUB_LOCATIONS: Record<HubRegion, HubLocation> = Object.fromEntries(
+  HUB_ACCOUNTS.map((account) => [
+    account.region,
+    {
+      name: account.region === 'astana' ? `${account.hub} (HQ)` : account.hub,
+      fullAddress:
+        HUB_ADDRESS_OVERRIDES[account.region] ?? `${account.city}, Казахстан`,
+    },
+  ]),
+);
+
+export function hubOptionFor(region: HubRegion): HubOption | null {
+  const account = HUB_ACCOUNTS.find((a) => a.region === region);
+  if (!account) return null;
+  return {
+    region,
+    label: account.hub.replace(/\s*Hub$/i, ''),
+    cityName: account.city,
+  };
+}
+
+/** Hubs worth showing as pills: those with events or staff, HQ always first. */
+export function buildHubOptions(events: UiEvent[], members: UiMember[]): HubOption[] {
+  const regions = new Set<string>(['astana']);
+  events.forEach((e) => regions.add(e.hub));
+  members.forEach((m) => regions.add(m.hub));
+
+  return HUB_ACCOUNTS.filter((a) => regions.has(a.region)).map((a) => ({
+    region: a.region,
+    label: a.hub.replace(/\s*Hub$/i, ''),
+    cityName: a.city,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Adapters: parsed data -> UI cards
+// ---------------------------------------------------------------------------
+
+const WEEKDAYS: Weekday[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Curated covers; a real post photo is not exposed by the parser, so cards get
+// a deterministic image from this pool keyed by event id.
+const EVENT_IMAGE_POOL = [
+  'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=640&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=640&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=640&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=640&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=640&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1511578314322-379afb476865?w=640&q=80&auto=format&fit=crop',
 ];
 
-// Contact directory ("Team Deck"). Roles embed the hub name so the chat parser
-// can match members by active city.
-export const CHUBS: TeamMember[] = [
-  {
-    id: 'aziz_seytkali',
-    name: 'Aziz Seytkali',
-    role: 'Director, Zhambyl Hub',
-    hub: 'Zhambyl',
-    bio: 'Leads the Zhambyl regional incubator: pre-incubation cohorts, AI bootcamps and the Demo Day pipeline for Taraz-region startups.',
-    telegram: '@aziz_hub',
-    instagram: '@aziz_hub',
-    avatarUrl: 'https://api.dicebear.com/9.x/notionists/svg?seed=aziz&backgroundColor=10b981',
-    focus: ['Incubation', 'Demo Day', 'AI Bootcamp'],
-  },
-  {
-    id: 'maria_zhambyl',
-    name: 'Maria Alibekova',
-    role: 'Regional Manager, Zhambyl Hub',
-    hub: 'Zhambyl',
-    bio: 'Coordinates partner programs and event logistics across the Zhambyl region; first point of contact for residents.',
-    telegram: '@maria_zhambyl',
-    instagram: '@zhambyl_hub',
-    avatarUrl: 'https://api.dicebear.com/9.x/notionists/svg?seed=maria&backgroundColor=3b82f6',
-    focus: ['Partnerships', 'Operations'],
-  },
-  {
-    id: 'elena_pavlodar',
-    name: 'Elena Nurkenova',
-    role: 'Director, Pavlodar Hub',
-    hub: 'Pavlodar',
-    bio: 'Runs the Pavlodar IT Hub speaker-talk series and founder finance workshops; ex-fintech product lead.',
-    telegram: '@elena_pvl',
-    instagram: '@pavlodar.hub',
-    avatarUrl: 'https://api.dicebear.com/9.x/notionists/svg?seed=elena&backgroundColor=f59e0b',
-    focus: ['Speaker Talks', 'Founder Finance'],
-  },
-  {
-    id: 'daniyar_astana',
-    name: 'Daniyar Omarov',
-    role: 'Head of Regional Network, Astana Hub HQ',
-    hub: 'Astana',
-    bio: 'Oversees all regional hub programming from the EXPO C1 headquarters, including the Innovations Accelerator intake.',
-    telegram: '@daniyar_hq',
-    instagram: '@astana.hub',
-    avatarUrl: 'https://api.dicebear.com/9.x/notionists/svg?seed=daniyar&backgroundColor=8b5cf6',
-    focus: ['Accelerator', 'HQ Network', 'Grants'],
-  },
-  {
-    id: 'aigerim_taraz',
-    name: 'Aigerim Bekova',
-    role: 'Community Lead, Taraz Innovation Hub',
-    hub: 'Taraz',
-    bio: 'Builds the Taraz developer community: hackathons, Cursor AI workshops and student outreach across local universities.',
-    telegram: '@aigerim_trz',
-    instagram: '@zhambyl_hub',
-    avatarUrl: 'https://api.dicebear.com/9.x/notionists/svg?seed=aigerim&backgroundColor=ec4899',
-    focus: ['Hackathons', 'Workshops', 'Community'],
-  },
-  {
-    id: 'nurlan_kyzylorda',
-    name: 'Nurlan Abenov',
-    role: 'Director, Kyzylorda Hub',
-    hub: 'Kyzylorda',
-    bio: 'Heads the Kyzylorda IT Hub education track — AI 101 lectures and remote pitch practice with HQ mentors.',
-    telegram: '@nurlan_kzo',
-    instagram: '@kyzylordahub',
-    avatarUrl: 'https://api.dicebear.com/9.x/notionists/svg?seed=nurlan&backgroundColor=14b8a6',
-    focus: ['Education', 'Student Programs'],
-  },
-];
-
-const SCHEDULE_DAYS: Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const SCHEDULE_TIMES = ['09:00', '11:00', '14:00', '16:00', '18:00'];
-
-// Deterministic pseudo-random availability so the grid renders identically on
-// server and client (no hydration mismatch).
-function slotSeed(city: string, day: string, time: string): number {
-  const key = `${city}|${day}|${time}`;
+function hashString(value: string): number {
   let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash * 31 + key.charCodeAt(i)) | 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0;
   }
   return Math.abs(hash);
 }
 
-export function getSchedule(city: HubCity): TimeSlot[] {
-  const cityEvents = EVENTS.filter((e) => e.hub === city);
+const DAY_FORMAT = new Intl.DateTimeFormat('ru-RU', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'UTC',
+});
+
+export function toUiEvent(event: HubEvent): UiEvent {
+  const parsed = new Date(`${event.date}T00:00:00Z`);
+  const format = event.format.toUpperCase() as UiEventFormat;
+
+  return {
+    id: event.id,
+    title: event.title,
+    description: event.description,
+    date: event.date,
+    day: DAY_FORMAT.format(parsed),
+    weekday: WEEKDAYS[parsed.getUTCDay()],
+    time: event.time ?? '',
+    hub: event.region,
+    hubName: event.hub,
+    cityName: event.city,
+    format,
+    imageUrl: EVENT_IMAGE_POOL[hashString(event.id) % EVENT_IMAGE_POOL.length],
+    instagramUrl: event.source_post_url,
+    locationName:
+      event.address ??
+      event.zoom_link ??
+      `Онлайн — ссылка в Instagram ${event.instagram}`,
+  };
+}
+
+const AVATAR_COLORS = ['10b981', '3b82f6', 'f59e0b', '8b5cf6', 'ec4899', '14b8a6'];
+
+export function toUiMember(person: HubStaff): UiMember {
+  const telegram =
+    person.contact && /^@/.test(person.contact) ? person.contact : null;
+  const email =
+    person.contact && person.contact.includes('@') && !telegram
+      ? person.contact
+      : null;
+
+  return {
+    id: person.id,
+    name: person.name,
+    role: person.role ?? 'Команда хаба',
+    hub: person.region,
+    hubName: person.hub,
+    cityName: person.city,
+    bio: `${person.role ?? 'Контакт'} — ${person.hub}, ${person.city}. Данные собраны из Instagram (${person.source}).`,
+    telegram,
+    instagram: person.instagram,
+    contact: email,
+    avatarUrl: `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(
+      person.id,
+    )}&backgroundColor=${AVATAR_COLORS[hashString(person.id) % AVATAR_COLORS.length]}`,
+    focus: [person.hub, person.city],
+  };
+}
+
+/** RU/KZ/EN heuristic: is the user asking about people rather than events? */
+export function isStaffQuery(text: string): boolean {
+  return /(команд|сотрудник|директор|менеджер|контакт|кто |кім|қызметкер|басшы|байланыс|staff|team|director|contact)/i.test(
+    text,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Mini-map geometry (approximate Kazakhstan layout on a 500x320 canvas)
+// ---------------------------------------------------------------------------
+
+export interface MapNode {
+  region: HubRegion;
+  x: number;
+  y: number;
+  label: string;
+}
+
+export const REGION_COORDS: Record<HubRegion, { x: number; y: number }> = {
+  astana: { x: 300, y: 115 },
+  north_kazakhstan: { x: 295, y: 50 },
+  aqmola: { x: 270, y: 95 },
+  pavlodar: { x: 385, y: 80 },
+  abai: { x: 415, y: 125 },
+  east_kazakhstan: { x: 455, y: 150 },
+  kostanay: { x: 195, y: 80 },
+  aktobe: { x: 130, y: 140 },
+  west_kazakhstan: { x: 60, y: 105 },
+  atyrau: { x: 70, y: 175 },
+  mangystau: { x: 60, y: 245 },
+  ulytau: { x: 250, y: 170 },
+  kyzylorda: { x: 185, y: 225 },
+  turkistan: { x: 235, y: 272 },
+  shymkent: { x: 255, y: 287 },
+  zhambyl: { x: 295, y: 277 },
+  almaty: { x: 380, y: 262 },
+  alatau: { x: 392, y: 250 },
+  jetisu: { x: 412, y: 225 },
+};
+
+export function mapNodes(): MapNode[] {
+  return Object.entries(REGION_COORDS)
+    .filter(([region]) => HUB_LOCATIONS[region])
+    .map(([region, { x, y }]) => ({
+      region,
+      x,
+      y,
+      label: hubOptionFor(region)?.label ?? region,
+    }));
+}
+
+/** Backbone links drawn from HQ to the major regional nodes. */
+export const MAP_BACKBONE: HubRegion[] = [
+  'pavlodar',
+  'east_kazakhstan',
+  'kostanay',
+  'aktobe',
+  'kyzylorda',
+  'zhambyl',
+  'almaty',
+];
+
+export function hasMapRoute(region: HubRegion): boolean {
+  return region !== 'astana' && region in REGION_COORDS;
+}
+
+// ---------------------------------------------------------------------------
+// Smart Schedule grid
+// ---------------------------------------------------------------------------
+
+const SCHEDULE_DAYS: Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const BASE_TIMES = ['09:00', '11:00', '14:00', '16:00', '18:00'];
+const FALLBACK_SLOT_TIME = '14:00';
+
+/**
+ * Builds the weekly grid for one hub from its real upcoming events. Free slots
+ * get deterministic availability noise so the grid renders identically on
+ * server and client.
+ */
+export function getSchedule(region: HubRegion, events: UiEvent[]): TimeSlot[] {
+  const hubEvents = events.filter((e) => e.hub === region);
+  const times = [
+    ...new Set([...BASE_TIMES, ...hubEvents.map((e) => e.time || FALLBACK_SLOT_TIME)]),
+  ].sort();
 
   return SCHEDULE_DAYS.flatMap((day) =>
-    SCHEDULE_TIMES.map((time) => {
-      const event = cityEvents.find((e) => e.weekday === day && e.time === time);
+    times.map((time) => {
+      const event = hubEvents.find(
+        (e) => e.weekday === day && (e.time || FALLBACK_SLOT_TIME) === time,
+      );
       return {
         day,
         time,
         // Roughly a quarter of free slots show as blocked-out rooms.
-        available: !!event || slotSeed(city, day, time) % 4 !== 0,
+        available: !!event || hashString(`${region}|${day}|${time}`) % 4 !== 0,
         event,
       };
     }),

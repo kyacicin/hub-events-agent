@@ -1,35 +1,49 @@
-// Shared types for the HubVibe Portal front end (glassmorphic UI demo layer).
+// Shared types for the HubVibe Portal front end.
+// UI models are adapted from the parsed-data schemas in src/lib/schemas.ts.
 
-export type HubCity = 'Astana' | 'Zhambyl' | 'Pavlodar' | 'Taraz' | 'Kyzylorda';
+/** Region key from src/lib/hubAccounts.ts, e.g. "zhambyl", "pavlodar". */
+export type HubRegion = string;
 
 export type Weekday = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
 
-export interface HubEvent {
+export type UiEventFormat = 'ONLINE' | 'OFFLINE' | 'HYBRID';
+
+/** Card model the glassmorphic UI consumes, adapted from a parsed HubEvent. */
+export interface UiEvent {
   id: string;
   title: string;
   description: string;
-  /** Display date, e.g. "Sat, Jun 14" */
+  /** ISO date, e.g. "2026-06-14" */
+  date: string;
+  /** Display date, e.g. "сб, 14 июня" */
   day: string;
   /** Weekday key used to anchor the event on the Smart Schedule grid */
   weekday: Weekday;
+  /** "HH:MM" or empty string when the post had no time */
   time: string;
-  hub: HubCity;
-  format: 'ONLINE' | 'OFFLINE';
+  hub: HubRegion;
+  hubName: string;
+  cityName: string;
+  format: UiEventFormat;
   imageUrl: string;
+  /** Link to the source Instagram post */
   instagramUrl: string;
   locationName: string;
 }
 
-export interface TeamMember {
+/** Directory entry adapted from a parsed HubStaff record. */
+export interface UiMember {
   id: string;
   name: string;
   role: string;
-  hub: HubCity;
+  hub: HubRegion;
+  hubName: string;
+  cityName: string;
   bio: string;
-  telegram: string;
-  instagram: string;
+  telegram: string | null;
+  instagram: string | null;
+  contact: string | null;
   avatarUrl: string;
-  /** Specialization tags shown in the expanded dossier drawer */
   focus: string[];
 }
 
@@ -37,7 +51,7 @@ export interface TimeSlot {
   day: Weekday;
   time: string;
   available: boolean;
-  event?: HubEvent;
+  event?: UiEvent;
 }
 
 export interface ChatMessage {
@@ -45,12 +59,20 @@ export interface ChatMessage {
   sender: 'user' | 'assistant';
   text: string;
   timestamp: Date;
-  carouselEvents?: HubEvent[];
-  teamMembers?: TeamMember[];
+  carouselEvents?: UiEvent[];
+  teamMembers?: UiMember[];
   showMapForEventId?: string;
+  modelStatus?: 'ok' | 'fallback';
 }
 
 export interface HubLocation {
   name: string;
   fullAddress: string;
+}
+
+/** Selectable hub for header pills, chat dropdown and schedule switcher. */
+export interface HubOption {
+  region: HubRegion;
+  label: string;
+  cityName: string;
 }

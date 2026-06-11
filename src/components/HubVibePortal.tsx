@@ -3,8 +3,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarRange, LayoutGrid, Users, X } from 'lucide-react';
-import { EVENTS } from '../data';
-import { HubCity, HubEvent } from '../types';
+import { HubOption, HubRegion, UiEvent, UiMember } from '../types';
 import GlassmorphicHeader from './GlassmorphicHeader';
 import SleekChat from './SleekChat';
 import EventCarousel from './EventCarousel';
@@ -19,18 +18,26 @@ interface Toast {
   message: string;
 }
 
+interface HubVibePortalProps {
+  events: UiEvent[];
+  members: UiMember[];
+  hubs: HubOption[];
+}
+
 const AUX_TABS: Array<{ key: AuxView; label: string; icon: typeof LayoutGrid }> = [
   { key: 'events', label: 'Event Carousel', icon: LayoutGrid },
   { key: 'team', label: 'Team Deck', icon: Users },
   { key: 'schedule', label: 'Smart Schedule', icon: CalendarRange },
 ];
 
-export default function HubVibePortal() {
-  const [activeCity, setActiveCity] = useState<HubCity>('Zhambyl');
+export default function HubVibePortal({ events, members, hubs }: HubVibePortalProps) {
+  const [activeRegion, setActiveRegion] = useState<HubRegion>(
+    hubs[0]?.region ?? 'astana',
+  );
   const [auxView, setAuxView] = useState<AuxView>('events');
   const [isSimulating, setIsSimulating] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [directionsEvent, setDirectionsEvent] = useState<HubEvent | null>(null);
+  const [directionsEvent, setDirectionsEvent] = useState<UiEvent | null>(null);
   const toastId = useRef(0);
 
   const pushToast = useCallback((message: string) => {
@@ -41,12 +48,12 @@ export default function HubVibePortal() {
     }, 3200);
   }, []);
 
-  const handleShowDirections = useCallback((event: HubEvent) => {
+  const handleShowDirections = useCallback((event: UiEvent) => {
     setDirectionsEvent(event);
-    pushToast(`📍 Plotting route to ${event.locationName.split(',')[0]}...`);
+    pushToast(`📍 Строю маршрут: ${event.locationName.split(',')[0]}...`);
   }, [pushToast]);
 
-  const cityEvents = EVENTS.filter(e => e.hub === activeCity);
+  const regionEvents = events.filter(e => e.hub === activeRegion);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans">
@@ -57,16 +64,18 @@ export default function HubVibePortal() {
       </div>
 
       <GlassmorphicHeader
-        activeCity={activeCity}
-        onCityChange={setActiveCity}
+        hubs={hubs}
+        activeRegion={activeRegion}
+        onRegionChange={setActiveRegion}
         isSimulating={isSimulating}
       />
 
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-6 items-start">
-        {/* Action-First Chat Interface */}
+        {/* Action-First Chat Interface (live agent) */}
         <SleekChat
-          activeCity={activeCity}
-          onCityChanged={setActiveCity}
+          hubs={hubs}
+          activeRegion={activeRegion}
+          onRegionChanged={setActiveRegion}
           onSaveToast={pushToast}
           onSetAuxView={setAuxView}
           isSimulating={isSimulating}
@@ -103,19 +112,25 @@ export default function HubVibePortal() {
             >
               {auxView === 'events' && (
                 <EventCarousel
-                  events={cityEvents}
+                  events={regionEvents}
                   onShowDirections={handleShowDirections}
                   onSaveToast={pushToast}
                 />
               )}
               {auxView === 'team' && (
-                <TeamDeck activeCity={activeCity} onSaveToast={pushToast} />
+                <TeamDeck
+                  members={members}
+                  activeRegion={activeRegion}
+                  onSaveToast={pushToast}
+                />
               )}
               {auxView === 'schedule' && (
                 <ScheduleGrid
-                  // Remount on city change so the grid filter follows the header pills
-                  key={activeCity}
-                  initialCity={activeCity}
+                  // Remount on region change so the grid filter follows the header pills
+                  key={activeRegion}
+                  events={events}
+                  hubs={hubs}
+                  initialRegion={activeRegion}
                   onShowDirections={handleShowDirections}
                 />
               )}
@@ -149,7 +164,7 @@ export default function HubVibePortal() {
                 <X className="w-4 h-4" />
               </button>
               <MiniMap
-                targetCity={directionsEvent.hub}
+                targetRegion={directionsEvent.hub}
                 eventName={directionsEvent.title}
                 locationName={directionsEvent.locationName}
               />

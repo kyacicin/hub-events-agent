@@ -1,5 +1,27 @@
 [
   {
+    "id": "staff_zhambyl_aziz_seytkali",
+    "hub": "Zhambyl Hub",
+    "city": "Тараз",
+    "region": "zhambyl",
+    "name": "Азиз Сейткали",
+    "role": "Директор",
+    "instagram": "@aziz_hub",
+    "contact": null,
+    "source": "instagram_highlights_demo"
+  },
+  {
+    "id": "staff_zhambyl_maria_alibekova",
+    "hub": "Zhambyl Hub",
+    "city": "Тараз",
+    "region": "zhambyl",
+    "name": "Мария Алибекова",
+    "role": "Региональный менеджер",
+    "instagram": null,
+    "contact": "maria@astanahub.com",
+    "source": "instagram_post_demo"
+  },
+  {
     "id": "staff_astana_hub_contact",
     "hub": "Astana Hub",
     "city": "Астана",

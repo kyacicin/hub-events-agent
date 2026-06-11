@@ -3,22 +3,34 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, MapPin, Paperclip, Clipboard, Code, ChevronDown, Check } from 'lucide-react';
-import { HUB_LOCATIONS, CHUBS, EVENTS } from '../data';
-import { HubCity, ChatMessage, HubEvent, TeamMember } from '../types';
+import { HUB_LOCATIONS, hasMapRoute, isStaffQuery, toUiEvent, toUiMember } from '../data';
+import { ChatMessage, HubOption, HubRegion, UiEvent, UiMember } from '../types';
+import type { HubEvent, HubStaff } from '@/lib/schemas';
 import MiniMap from './MiniMap';
 
 interface SleekChatProps {
-  activeCity: HubCity;
-  onCityChanged: (city: HubCity) => void;
+  hubs: HubOption[];
+  activeRegion: HubRegion;
+  onRegionChanged: (region: HubRegion) => void;
   onSaveToast: (message: string) => void;
   onSetAuxView: (view: 'events' | 'team' | 'schedule') => void;
   isSimulating: boolean;
   setIsSimulating: (sim: boolean) => void;
 }
 
+type ChatApiResponse = {
+  reply: string;
+  events: HubEvent[];
+  staff: HubStaff[];
+  region: string | null;
+  city: string | null;
+  modelStatus: 'ok' | 'fallback';
+};
+
 export default function SleekChat({
-  activeCity,
-  onCityChanged,
+  hubs,
+  activeRegion,
+  onRegionChanged,
   onSaveToast,
   onSetAuxView,
   isSimulating,
@@ -39,13 +51,13 @@ export default function SleekChat({
       {
         id: 'init-1',
         sender: 'assistant',
-        text: `👋 Hello! I'm your interactive AI Assistant. I can help you parse, schedule, and navigate events, directory channels, and calendars across our regional Kazakhstani hubs!`,
+        text: `👋 Сәлем! Я AI-ассистент региональных хабов Astana Hub. Напишите свой город — найду предстоящие события, форматы, адреса и контакты команды. Жазыңыз — қазақша да жауап беремін!`,
         timestamp: new Date(),
       },
       {
         id: 'init-2',
         sender: 'assistant',
-        text: `Try querying something specific or tap one of the workspace visualizer presets down below to test the advanced card carousels, profile chips, and tennis-style grids!`,
+        text: `Например: «Привет, я из Тараза. Что есть в ближайшее время?» — или нажмите один из пресетов внизу.`,
         timestamp: new Date(),
       },
     ]);
@@ -56,108 +68,113 @@ export default function SleekChat({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isSimulating, inlineMapEventId]);
 
-  const handleSendMessage = (textToSend: string, cityOverride?: HubCity) => {
+  const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || isSimulating) return;
 
-    const targetCity = cityOverride ?? activeCity;
-
-    // Send user message
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
-      text: textToSend,
+      text: textToSend.trim(),
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const history = [...messages, userMsg];
+    setMessages(history);
     setInputText('');
     setIsSimulating(true);
 
-    // Simulate AI scraper / JSON database parsing logic
-    setTimeout(() => {
-      const criteria = textToSend.toLowerCase();
-      let aiText = '';
-      let parsedEvents: HubEvent[] | undefined;
-      let parsedMembers: TeamMember[] | undefined;
-      let inlineMapId: string | null = null;
+    try {
+      const activeCity = hubs.find(h => h.region === activeRegion)?.cityName;
+      // The selected hub acts as a fallback location: region detection walks
+      // the history from newest to oldest, so an explicit city in the user's
+      // text always wins over this hint.
+      const apiMessages = [
+        ...(activeCity ? [{ role: 'user' as const, content: `Мой город: ${activeCity}.` }] : []),
+        ...history.slice(-9).map(m => ({
+          role: m.sender === 'assistant' ? ('assistant' as const) : ('user' as const),
+          content: m.text,
+        })),
+      ];
 
-      // 1. Check for Team / Director / Contact queries (checked first so
-      // "who is the director of X hub" doesn't match the event branch)
-      if (criteria.includes('director') || criteria.includes('who is') || criteria.includes('aziz') || criteria.includes('elena') || criteria.includes('team') || criteria.includes('contacts')) {
-        // Find directory members for the current city
-        const matchingMember = CHUBS.filter(m => m.role.toLowerCase().includes(targetCity.toLowerCase()) || m.id.includes(targetCity.toLowerCase()));
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
 
-        if (matchingMember.length > 0) {
-          parsedMembers = matchingMember;
-          aiText = `⚡ **CONTACT CHIP CONSTRUCTED**: ${matchingMember.map(m => m.name).join(' and ')} verified for ${HUB_LOCATIONS[targetCity].name}. You can click on the specialized "Team Chip" below to expand their full glassmorphism dossier, and tap the reveal details toggle for Telegram links.`;
-        } else {
-          // Send active manager profile
-          const regionalManager = CHUBS.find(m => m.id === 'aziz_seytkali') || CHUBS[0];
-          parsedMembers = [regionalManager];
-          aiText = `⚡ **CONTACT PARSING ACTIVE**: Regional contact parsed. Showing profile cards for Hub Leads, including **${regionalManager.name}**. Tapping below opens their encrypted biographical card details in-chat.`;
-        }
+      if (!response.ok) {
+        const error = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(error?.error ?? 'Не удалось получить ответ агента.');
       }
-      // 2. Check for Event / Location queries
-      else if (criteria.includes('event') || criteria.includes('happen') || criteria.includes('hubs') || criteria.includes('show') || criteria.includes('what') || criteria.includes('taraz') || criteria.includes('pavlodar') || criteria.includes('astana') || criteria.includes('kyzylorda') || criteria.includes('zhambyl')) {
-        // Find events in the current active city
-        const matchEvents = EVENTS.filter(e => e.hub.toLowerCase() === targetCity.toLowerCase());
-        parsedEvents = matchEvents;
 
-        aiText = `🔍 **DATABASE ACQUIRED**: I have parsed the local Instagram feeds and highlights for **${HUB_LOCATIONS[targetCity].name}**. I found **${matchEvents.length} upcoming events**! They are loaded in the swipeable carousel card below.`;
-
-        // If there's an offline event, let's suggest map coordinates
-        const offlineMatch = matchEvents.find(e => e.format === 'OFFLINE');
-        if (offlineMatch) {
-          inlineMapId = offlineMatch.id;
-        }
-      }
-      // 3. Fallback standard Chat reaction
-      else {
-        aiText = `💡 **SYSTEM OK STATE**: Thanks for your request! I am prepared for parsing. Let's switch our auxiliary deck view to check this week's **Schedule Grid** or query events directly. Try using these quick template clicks below for instant formatting tests.`;
-      }
+      const data = (await response.json()) as ChatApiResponse;
+      const uiEvents: UiEvent[] = data.events.map(toUiEvent);
+      const staffQuestion = isStaffQuery(userMsg.text);
+      const uiMembers: UiMember[] = staffQuestion ? data.staff.map(toUiMember) : [];
+      const mappableEvent = uiEvents.find(
+        e => e.format !== 'ONLINE' && hasMapRoute(e.hub),
+      );
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'assistant',
-        text: aiText,
+        text: data.reply,
         timestamp: new Date(),
-        carouselEvents: parsedEvents,
-        teamMembers: parsedMembers,
-        showMapForEventId: inlineMapId || undefined,
+        carouselEvents: uiEvents.length ? uiEvents : undefined,
+        teamMembers: uiMembers.length ? uiMembers : undefined,
+        showMapForEventId: mappableEvent?.id,
+        modelStatus: data.modelStatus,
       };
 
       setMessages(prev => [...prev, aiMsg]);
-      setIsSimulating(false);
+
+      // Sync the portal with the region the agent detected
+      if (data.region && hubs.some(h => h.region === data.region)) {
+        onRegionChanged(data.region);
+      }
 
       // Auto switch Auxiliary side panels as visual cues
-      if (parsedEvents) onSetAuxView('events');
-      else if (parsedMembers) onSetAuxView('team');
-    }, 1500); // Pulse delay
+      if (uiMembers.length) onSetAuxView('team');
+      else if (uiEvents.length) onSetAuxView('events');
+    } catch (error) {
+      const text =
+        error instanceof Error ? error.message : 'Не удалось получить ответ агента.';
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `ai-error-${Date.now()}`,
+          sender: 'assistant',
+          text: `⚠️ ${text} Попробуйте ещё раз чуть позже.`,
+          timestamp: new Date(),
+        },
+      ]);
+      onSaveToast('⚠️ Ошибка запроса к агенту');
+    } finally {
+      setIsSimulating(false);
+    }
   };
 
-  const handlePresetTrigger = (promptText: string, suggestedCity?: HubCity) => {
-    if (suggestedCity) {
-      onCityChanged(suggestedCity);
+  const handlePresetTrigger = (promptText: string, suggestedRegion?: HubRegion) => {
+    if (suggestedRegion && hubs.some(h => h.region === suggestedRegion)) {
+      onRegionChanged(suggestedRegion);
     }
-    handleSendMessage(promptText, suggestedCity);
+    void handleSendMessage(promptText);
   };
 
   const executeAction = (actionType: string, payload?: string) => {
     if (actionType === 'show_map') {
       const eId = payload ?? null;
       setInlineMapEventId(prev => prev === eId ? null : eId);
-      onSaveToast("Plotting interactive route inside chat thread...");
+      onSaveToast('Строю интерактивный маршрут внутри чата...');
     } else if (actionType === 'add_cal') {
-      onSaveToast(`🗓 Saved "${payload}" to your device calendar! (Simulated ICS download)`);
+      onSaveToast(`🗓 «${payload}» сохранено в календарь! (демо)`);
     } else if (actionType === 'show_team') {
       onSetAuxView('team');
-      onSaveToast("Switched Auxiliary Panel to Team Deck!");
-    } else if (actionType === 'connect_social') {
-      onSaveToast(`🔗 Parsed bio links unlocked: Redirecting to Telegram encrypted feed.`);
+      onSaveToast('Открыт Team Deck!');
     }
   };
 
-  const cities: HubCity[] = ['Astana', 'Zhambyl', 'Pavlodar', 'Taraz', 'Kyzylorda'];
+  const activeHubName = HUB_LOCATIONS[activeRegion]?.name ?? activeRegion;
 
   return (
     <div id="sleek-chat-container" className="flex flex-col h-[600px] rounded-3xl bg-neutral-950 border border-neutral-800 shadow-2xl relative overflow-hidden">
@@ -179,7 +196,7 @@ export default function SleekChat({
             className="flex items-center gap-1.5 px-3 py-1 bg-neutral-950 border border-neutral-800 rounded-lg text-emerald-400 font-mono font-bold hover:bg-neutral-900 transition-colors cursor-pointer"
           >
             <MapPin className="w-3" />
-            <span>{activeCity} Hub Selected</span>
+            <span>{activeHubName}</span>
             <ChevronDown className="w-3" />
           </button>
 
@@ -189,24 +206,24 @@ export default function SleekChat({
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute right-0 mt-1.5 w-48 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl p-1 z-40"
+                className="absolute right-0 mt-1.5 w-52 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl p-1 z-40"
               >
-                {cities.map((city) => (
+                {hubs.map((hub) => (
                   <button
-                    key={city}
+                    key={hub.region}
                     onClick={() => {
-                      onCityChanged(city);
+                      onRegionChanged(hub.region);
                       setShowLocationDropdown(false);
-                      onSaveToast(`Switched active parsing parameters to ${city} Hub`);
+                      onSaveToast(`Активный хаб: ${hub.label} (${hub.cityName})`);
                     }}
                     className={`w-full text-left px-3 py-2 text-xs font-sans rounded-lg flex items-center justify-between ${
-                      activeCity === city
+                      activeRegion === hub.region
                         ? 'bg-emerald-500/10 text-emerald-400 font-bold'
                         : 'text-neutral-300 hover:bg-white/5'
                     }`}
                   >
-                    <span>{city} IT Hub</span>
-                    {activeCity === city && <Check className="w-3 text-emerald-400" />}
+                    <span>{hub.label} · {hub.cityName}</span>
+                    {activeRegion === hub.region && <Check className="w-3 text-emerald-400" />}
                   </button>
                 ))}
               </motion.div>
@@ -226,7 +243,7 @@ export default function SleekChat({
               className={`flex flex-col ${isAI ? 'items-start' : 'items-end'} gap-1`}
             >
               <div className="text-[10px] font-mono text-neutral-500 px-1">
-                {isAI ? '🤖 AI Assistant' : '👤 You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {isAI ? '🤖 AI Assistant' : '👤 Вы'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
 
               {/* Chat Bubble card container */}
@@ -235,12 +252,17 @@ export default function SleekChat({
                   ? 'bg-neutral-900/60 border border-neutral-800 text-neutral-200'
                   : 'bg-emerald-500 text-neutral-950 font-medium font-sans shadow-md shadow-emerald-500/5'
               }`}>
-                {/* Text string parsing markdown-like titles */}
                 <div className="whitespace-pre-wrap leading-relaxed">
                   {message.text}
                 </div>
 
-                {/* Inline Map Showcase IF Offline event direction is active (The "Wow" Factor) */}
+                {isAI && message.modelStatus === 'fallback' && (
+                  <p className="mt-2 pt-2 border-t border-neutral-800 text-[10px] font-mono text-amber-500/80">
+                    Ответ собран локально без Gemini API.
+                  </p>
+                )}
+
+                {/* Inline Map Showcase IF an offline event has a known route (The "Wow" Factor) */}
                 {isAI && message.showMapForEventId && (
                   <div className="mt-3">
                     <button
@@ -248,18 +270,18 @@ export default function SleekChat({
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-mono font-bold bg-neutral-950 border border-neutral-800 hover:border-emerald-500/40 text-emerald-400 transition-all cursor-pointer"
                     >
                       <MapPin className="w-3" />
-                      {inlineMapEventId === message.showMapForEventId ? 'Collapse In-Chat Map' : '📍 Show Route Vector Mini-Map'}
+                      {inlineMapEventId === message.showMapForEventId ? 'Скрыть карту' : '📍 Показать маршрут (Mini-Map)'}
                     </button>
 
                     {inlineMapEventId === message.showMapForEventId && (
                       <div className="mt-2 text-neutral-100">
                         {(() => {
-                          const associatedEvent = EVENTS.find(e => e.id === message.showMapForEventId);
+                          const associatedEvent = message.carouselEvents?.find(e => e.id === message.showMapForEventId);
                           return (
                             <MiniMap
-                              targetCity={associatedEvent?.hub || activeCity}
-                              eventName={associatedEvent?.title || 'Parsed Target Node'}
-                              locationName={associatedEvent?.locationName || 'Coworking Lounge'}
+                              targetRegion={associatedEvent?.hub || activeRegion}
+                              eventName={associatedEvent?.title || 'Событие'}
+                              locationName={associatedEvent?.locationName || ''}
                             />
                           );
                         })()}
@@ -268,11 +290,11 @@ export default function SleekChat({
                   </div>
                 )}
 
-                {/* Simulated inline widgets if relevant components are parsed back */}
+                {/* Inline contact cards when the agent returns staff */}
                 {isAI && message.teamMembers && (
                   <div className="mt-3 p-1 rounded-xl bg-neutral-950 border border-neutral-800">
                     <div className="text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-tight px-3 py-1 border-b border-neutral-900 mb-1">
-                      Rendered Contact Cards
+                      Контакты команды
                     </div>
                     {message.teamMembers.map(m => (
                       <div key={m.id} className="p-2 border-b last:border-b-0 border-neutral-900/60 flex items-center justify-between text-[11px]">
@@ -281,34 +303,38 @@ export default function SleekChat({
                           <img src={m.avatarUrl} alt="" className="w-6 h-6 rounded-md object-cover" />
                           <div>
                             <p className="font-bold text-neutral-200">{m.name}</p>
-                            <p className="text-[9px] text-neutral-500">{m.role}</p>
+                            <p className="text-[9px] text-neutral-500">{m.role} · {m.cityName}</p>
                           </div>
                         </div>
-                        <a
-                          href={`https://t.me/${m.telegram.replace('@', '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-2 py-1 rounded bg-blue-950/40 text-blue-400 hover:bg-blue-900/40 text-[9px] font-mono font-bold transition-all border border-blue-900/50"
-                        >
-                          Send Ping
-                        </a>
+                        {m.instagram && (
+                          <a
+                            href={`https://www.instagram.com/${m.instagram.replace('@', '')}/`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2 py-1 rounded bg-pink-950/40 text-pink-400 hover:bg-pink-900/40 text-[9px] font-mono font-bold transition-all border border-pink-900/50"
+                          >
+                            {m.instagram}
+                          </a>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Action-First Contextual Buttons block rendered ONLY right underneath AI responses! */}
-              {isAI && (
+              {/* Action-First Contextual Buttons block rendered ONLY right underneath AI responses */}
+              {isAI && (message.carouselEvents || message.teamMembers) && (
                 <div className="flex flex-wrap gap-1.5 mt-1 ml-1">
-                  {message.carouselEvents ? (
+                  {message.carouselEvents && (
                     <>
-                      <button
-                        onClick={() => executeAction('show_map', message.carouselEvents?.[0]?.id)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border border-neutral-800 hover:border-emerald-500/40 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-emerald-400 transition-all cursor-pointer"
-                      >
-                        📍 Show on Map
-                      </button>
+                      {message.showMapForEventId && (
+                        <button
+                          onClick={() => executeAction('show_map', message.showMapForEventId)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border border-neutral-800 hover:border-emerald-500/40 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-emerald-400 transition-all cursor-pointer"
+                        >
+                          📍 Show on Map
+                        </button>
+                      )}
                       <button
                         onClick={() => executeAction('add_cal', message.carouselEvents?.[0]?.title)}
                         className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200 transition-all cursor-pointer"
@@ -324,36 +350,14 @@ export default function SleekChat({
                         📸 View Post
                       </a>
                     </>
-                  ) : message.teamMembers ? (
-                    <>
-                      <button
-                        onClick={() => executeAction('connect_social')}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border border-neutral-800 hover:border-blue-500/40 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-blue-400 transition-all cursor-pointer"
-                      >
-                        👋 Send Telegram Ping
-                      </button>
-                      <button
-                        onClick={() => executeAction('show_team')}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200 transition-all cursor-pointer"
-                      >
-                        📁 Switch View (Team Deck)
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handlePresetTrigger("Who is the director of Zhambyl hub?", "Zhambyl")}
-                        className="px-2.5 py-1 text-[10px] font-mono rounded-lg border border-neutral-800 bg-neutral-950 text-neutral-500 hover:text-neutral-300 transition-all cursor-pointer"
-                      >
-                        🔍 Test Dynamic Director parsing
-                      </button>
-                      <button
-                        onClick={() => onSetAuxView('schedule')}
-                        className="px-2.5 py-1 text-[10px] font-mono rounded-lg border border-neutral-800 bg-neutral-950 text-neutral-500 hover:text-neutral-300 transition-all cursor-pointer"
-                      >
-                        🗓 Open Weekly Tennis Grid
-                      </button>
-                    </>
+                  )}
+                  {message.teamMembers && (
+                    <button
+                      onClick={() => executeAction('show_team')}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200 transition-all cursor-pointer"
+                    >
+                      📁 Открыть Team Deck
+                    </button>
                   )}
                 </div>
               )}
@@ -365,14 +369,14 @@ export default function SleekChat({
         {isSimulating && (
           <div className="flex flex-col items-start gap-1">
             <span className="text-[9px] font-mono text-amber-500 animate-pulse font-bold tracking-wider uppercase">
-              ⚡ LIVE QUERY IN PROGRESS: Scouring JSON DB...
+              ⚡ LIVE QUERY: агент анализирует базу событий...
             </span>
             <div className="rounded-2xl p-4 bg-neutral-900/40 border border-neutral-800 text-neutral-300 flex items-center gap-3">
               <span className="relative flex h-3.5 w-3.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80"></span>
                 <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
               </span>
-              <p className="text-xs font-mono">Parsing Instagram handles and schedule tables for {activeCity} Hub...</p>
+              <p className="text-xs font-mono">Ищу события и контакты: {activeHubName}...</p>
             </div>
           </div>
         )}
@@ -382,22 +386,28 @@ export default function SleekChat({
       {/* Preset Fast Testing panel */}
       <div className="p-3 bg-neutral-950 border-t border-neutral-900 flex gap-2 overflow-x-auto select-none">
         <button
-          onClick={() => handlePresetTrigger("Show upcoming events for Zhambyl", "Zhambyl")}
+          onClick={() => handlePresetTrigger('Привет, я из Тараза. Что есть в ближайшее время?', 'zhambyl')}
           className="shrink-0 px-3 py-1.5 rounded-xl border border-neutral-800 bg-neutral-900 text-[10px] font-sans font-medium hover:bg-neutral-800 text-neutral-300 transition-all cursor-pointer active:scale-95"
         >
-          📍 Events: Zhambyl Hub
+          📍 События: Тараз
         </button>
         <button
-          onClick={() => handlePresetTrigger("Who is the director of Pavlodar Hub?", "Pavlodar")}
+          onClick={() => handlePresetTrigger('Павлодардағы іс-шаралар қандай?', 'pavlodar')}
           className="shrink-0 px-3 py-1.5 rounded-xl border border-neutral-800 bg-neutral-900 text-[10px] font-sans font-medium hover:bg-neutral-800 text-neutral-300 transition-all cursor-pointer active:scale-95"
         >
-          👤 Director: Pavlodar Hub
+          🇰🇿 Іс-шаралар: Павлодар
         </button>
         <button
-          onClick={() => handlePresetTrigger("Who is the director of Zhambyl hub?", "Zhambyl")}
+          onClick={() => handlePresetTrigger('Кто в команде Zhambyl Hub? С кем связаться?', 'zhambyl')}
           className="shrink-0 px-3 py-1.5 rounded-xl border border-neutral-800 bg-neutral-900 text-[10px] font-sans font-medium hover:bg-neutral-800 text-neutral-300 transition-all cursor-pointer active:scale-95"
         >
-          👤 Director: Aziz Seytkali
+          👤 Команда: Zhambyl Hub
+        </button>
+        <button
+          onClick={() => handlePresetTrigger('Что есть в Астане на этой неделе?', 'astana')}
+          className="shrink-0 px-3 py-1.5 rounded-xl border border-neutral-800 bg-neutral-900 text-[10px] font-sans font-medium hover:bg-neutral-800 text-neutral-300 transition-all cursor-pointer active:scale-95"
+        >
+          🏢 События: Астана
         </button>
       </div>
 
@@ -412,21 +422,20 @@ export default function SleekChat({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleSendMessage(inputText);
+                void handleSendMessage(inputText);
               }
             }}
-            placeholder="Query events, schedules, or directors... (Shift+Enter for newline)"
+            placeholder="Напишите свой город и вопрос — на русском или казахском..."
             className="w-full h-11 bg-transparent text-xs font-sans text-neutral-100 placeholder-neutral-500 outline-none resize-none border-0 p-0 focus:ring-0"
           />
 
           {/* Sub Dock bar containing Link items + counter + Hot Send circular button */}
           <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-neutral-900/60 font-mono">
-            {/* Dock symbols */}
             <div className="flex items-center gap-2.5 text-neutral-500">
               <button className="hover:text-neutral-300 transition-colors" title="Attach code"><Code className="w-3.5" /></button>
               <button className="hover:text-neutral-300 transition-colors" title="Attach file"><Paperclip className="w-3.5" /></button>
               <button className="hover:text-neutral-300 transition-colors" title="Attach board"><Clipboard className="w-3.5" /></button>
-              <span className="text-[9px] text-neutral-600 font-mono">Shift + Enter for new line</span>
+              <span className="text-[9px] text-neutral-600 font-mono">Shift + Enter — новая строка</span>
             </div>
 
             {/* Right-aligned Character limits + Hot Sender button */}
@@ -436,13 +445,13 @@ export default function SleekChat({
               </span>
               <button
                 disabled={!inputText.trim() || isSimulating}
-                onClick={() => handleSendMessage(inputText)}
+                onClick={() => void handleSendMessage(inputText)}
                 className={`w-7.5 h-7.5 rounded-full flex items-center justify-center transition-all ${
                   inputText.trim() && !isSimulating
                     ? 'bg-red-500 hover:bg-red-400 scale-105 shadow-md shadow-red-500/20 active:scale-95 text-white'
                     : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
                 }`}
-                title="Send Message"
+                title="Отправить"
               >
                 <Send className="w-3.5 h-3.5 rotate-45 transform" />
               </button>
@@ -457,9 +466,9 @@ export default function SleekChat({
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isSimulating ? 'bg-amber-400' : 'bg-emerald-400'} opacity-75`}></span>
               <span className={`relative inline-flex rounded-full h-2 w-2 ${isSimulating ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
             </span>
-            <span>{isSimulating ? 'Database scraping active...' : 'All systems operational'}</span>
+            <span>{isSimulating ? 'Запрос к агенту...' : 'All systems operational'}</span>
           </div>
-          <span>Active scraping protocol secure</span>
+          <span>Gemini agent · RU / KZ</span>
         </div>
       </div>
     </div>
