@@ -1,19 +1,11 @@
-import { ChatInterface } from "@/components/ChatInterface";
-import { readEvents } from "@/lib/dataStore";
-import { filterUpcomingEvents } from "@/lib/filter";
-import { HUB_ACCOUNTS } from "@/lib/hubAccounts";
+import HubVibePortal from "@/components/HubVibePortal";
 
-// Re-read the durable store every 5 minutes so cron updates surface without a redeploy.
-export const revalidate = 300;
+export const metadata = {
+  title: "HubVibe Portal — Glassmorphic Hub Events",
+  description:
+    "Glassmorphic front end for regional Kazakhstani hub events: carousel, team deck, smart schedule and action-first chat.",
+};
 
-export default async function Home() {
-  const upcomingEvents = filterUpcomingEvents(await readEvents());
-
-  return (
-    <ChatInterface
-      hubCount={HUB_ACCOUNTS.length}
-      demoEventCount={upcomingEvents.length}
-      featuredEvents={upcomingEvents.slice(0, 4)}
-    />
-  );
+export default function Home() {
+  return <HubVibePortal />;
 }
