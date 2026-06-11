@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: the portal toggles a `.dark` wrapper at runtime. */
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

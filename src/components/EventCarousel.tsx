@@ -5,11 +5,14 @@ import { Heart, ChevronRight, ChevronLeft, Calendar, Clock, MapPin, CheckCircle 
 import InstagramIcon from './InstagramIcon';
 import { hasMapRoute } from '../data';
 import { UiEvent, UiEventFormat } from '../types';
+import { Lang, formatDay } from '../i18n';
 
 interface EventCarouselProps {
   events: UiEvent[];
   onShowDirections?: (event: UiEvent) => void;
   onSaveToast?: (message: string) => void;
+  lang: Lang;
+  t: Record<string, string>;
 }
 
 const FORMAT_BADGE: Record<UiEventFormat, { pill: string; dot: string }> = {
@@ -18,7 +21,7 @@ const FORMAT_BADGE: Record<UiEventFormat, { pill: string; dot: string }> = {
   HYBRID: { pill: 'bg-amber-500 text-neutral-950 shadow-md shadow-amber-500/20', dot: 'bg-neutral-950 animate-pulse' },
 };
 
-export default function EventCarousel({ events, onShowDirections, onSaveToast }: EventCarouselProps) {
+export default function EventCarousel({ events, onShowDirections, onSaveToast, lang, t }: EventCarouselProps) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -44,10 +47,10 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
     let updated: string[];
     if (savedIds.includes(eventId)) {
       updated = savedIds.filter(id => id !== eventId);
-      if (onSaveToast) onSaveToast(`«${title}» убрано из сохранённых`);
+      if (onSaveToast) onSaveToast(`«${title}» ${t.removedToast}`);
     } else {
       updated = [...savedIds, eventId];
-      if (onSaveToast) onSaveToast(`«${title}» сохранено в закладки!`);
+      if (onSaveToast) onSaveToast(`«${title}» ${t.savedToast}`);
     }
     setSavedIds(updated);
     try {
@@ -75,9 +78,9 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
 
   if (!events || events.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 bg-neutral-900/40 rounded-3xl border border-neutral-800 text-neutral-400">
-        <Calendar className="w-8 h-8 text-neutral-600 mb-2" />
-        <p className="text-sm font-sans">Предстоящих событий в этом регионе пока нет.</p>
+      <div className="flex flex-col items-center justify-center p-8 bg-white/70 dark:bg-neutral-900/40 rounded-3xl border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">
+        <Calendar className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mb-2" />
+        <p className="text-sm font-sans">{t.noEvents}</p>
       </div>
     );
   }
@@ -88,8 +91,8 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400" />
-          <h3 className="text-sm font-semibold font-sans uppercase tracking-wider text-neutral-300">
-            Regional Events ({events.length})
+          <h3 className="text-sm font-semibold font-sans uppercase tracking-wider text-neutral-600 dark:text-neutral-300">
+            {t.regionalEvents} ({events.length})
           </h3>
         </div>
 
@@ -98,7 +101,7 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
           <div className="flex items-center gap-1.5">
             <button
               onClick={handlePrev}
-              className="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all duration-200"
+              className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-200"
               aria-label="Previous event"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -108,7 +111,7 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
             </span>
             <button
               onClick={handleNext}
-              className="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all duration-200"
+              className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-200"
               aria-label="Next event"
             >
               <ChevronRight className="w-4 h-4" />
@@ -130,13 +133,13 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
                 key={event.id}
                 className="w-full shrink-0 px-0.5"
               >
-                {/* Premium Glassmorphic Card (Bali styled + GPT-4 Dark container) */}
-                <div className="relative group rounded-3xl bg-neutral-900/80 border border-neutral-800/80 hover:border-neutral-700/80 backdrop-blur-xl p-4 overflow-hidden shadow-xl transition-all duration-300 flex flex-col justify-between h-[390px] hover:shadow-2xl hover:shadow-black/20">
+                {/* Premium Glassmorphic Card */}
+                <div className="relative group rounded-3xl bg-white/80 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700/80 backdrop-blur-xl p-4 overflow-hidden shadow-xl shadow-neutral-200/50 dark:shadow-black/20 transition-all duration-300 flex flex-col justify-between h-[390px] hover:shadow-2xl">
                   {/* Subtle Top Glow gradient accent */}
                   <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent group-hover:via-emerald-400 transition-all duration-500" />
 
                   {/* Image Container */}
-                  <div className="relative w-full h-[150px] rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-800">
+                  <div className="relative w-full h-[150px] rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={event.imageUrl}
@@ -160,7 +163,7 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
                     <button
                       onClick={() => toggleSave(event.id, event.title)}
                       className="absolute top-2 right-2 p-2 rounded-xl bg-neutral-950/70 border border-white/5 text-neutral-400 hover:text-red-400 hover:scale-110 active:scale-95 transition-all duration-200 backdrop-blur-md"
-                      title={isSaved ? "Remove Bookmark" : "Save Event"}
+                      title={isSaved ? t.removeBookmark : t.saveEvent}
                     >
                       <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
                     </button>
@@ -171,7 +174,7 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
                       target="_blank"
                       rel="noopener noreferrer"
                       className="absolute bottom-2 right-2 p-2.5 rounded-xl bg-gradient-to-tr from-pink-500 to-amber-500 text-white hover:scale-110 active:scale-95 transition-all duration-200 shadow-md shadow-pink-500/20 backdrop-blur-md"
-                      title="Open Instagram"
+                      title={t.openPost}
                     >
                       <InstagramIcon className="w-3.5 h-3.5" />
                     </a>
@@ -181,26 +184,26 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
                   <div className="mt-4 flex-1 flex flex-col justify-between">
                     <div>
                       {/* DateTime Indicators */}
-                      <div className="flex items-center gap-3 text-[11px] font-mono text-neutral-400 mb-1.5">
+                      <div className="flex items-center gap-3 text-[11px] font-mono text-neutral-500 dark:text-neutral-400 mb-1.5">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3" />
-                          <span>{event.day}</span>
+                          <span>{formatDay(event.date, lang)}</span>
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3" />
                           <span>{event.time || '—'}</span>
                         </span>
-                        <span className="text-emerald-500 text-[10px] bg-emerald-950/30 border border-emerald-900/40 px-1 rounded uppercase">
+                        <span className="text-emerald-600 dark:text-emerald-500 text-[10px] bg-emerald-100 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 px-1 rounded uppercase">
                           {event.cityName}
                         </span>
                       </div>
 
                       {/* Event title */}
-                      <h4 className="text-base font-sans font-bold leading-tight text-neutral-100 line-clamp-1 group-hover:text-emerald-300 transition-colors duration-300">
+                      <h4 className="text-base font-sans font-bold leading-tight text-neutral-900 dark:text-neutral-100 line-clamp-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors duration-300">
                         {event.title}
                       </h4>
                       {/* Short Description */}
-                      <p className="text-xs text-neutral-400 leading-relaxed line-clamp-2 mt-1.5 font-sans">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed line-clamp-2 mt-1.5 font-sans">
                         {event.description}
                       </p>
                     </div>
@@ -210,18 +213,18 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
                       {event.format !== 'ONLINE' && hasMapRoute(event.hub) && onShowDirections ? (
                         <button
                           onClick={() => onShowDirections(event)}
-                          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-sans font-medium rounded-xl text-neutral-900 bg-emerald-400 hover:bg-emerald-300 transition-all duration-250 cursor-pointer shadow-lg shadow-emerald-400/5 focus:outline-none"
+                          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-sans font-medium rounded-xl text-neutral-900 bg-emerald-400 hover:bg-emerald-300 transition-all duration-250 cursor-pointer shadow-lg shadow-emerald-400/10 focus:outline-none"
                         >
                           <MapPin className="w-3.5" />
-                          Маршрут (Mini-Map)
+                          {t.route}
                         </button>
                       ) : event.format === 'ONLINE' ? (
-                        <div className="flex items-center justify-center gap-2 px-3 py-2 text-xs font-mono font-semibold rounded-xl text-emerald-400 bg-emerald-950/20 border border-emerald-900/40">
+                        <div className="flex items-center justify-center gap-2 px-3 py-2 text-xs font-mono font-semibold rounded-xl text-emerald-600 dark:text-emerald-400 bg-emerald-100/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40">
                           <CheckCircle className="w-3.5 shrink-0" />
                           <span className="truncate">{event.locationName}</span>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center gap-2 px-3 py-2 text-xs font-mono font-semibold rounded-xl text-neutral-300 bg-neutral-950/40 border border-neutral-800">
+                        <div className="flex items-center justify-center gap-2 px-3 py-2 text-xs font-mono font-semibold rounded-xl text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-950/40 border border-neutral-200 dark:border-neutral-800">
                           <MapPin className="w-3.5 shrink-0" />
                           <span className="truncate">{event.locationName}</span>
                         </div>
