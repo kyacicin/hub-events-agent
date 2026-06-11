@@ -70,7 +70,8 @@ export function buildSystemPrompt({
 2. Если город не указан, попросить уточнить город.
 3. Показать только предстоящие события для выбранного региона.
 4. Если пользователь спрашивает про команду, ответить по базе команды.
-5. Отвечать на русском или казахском языке в зависимости от языка последнего сообщения пользователя.
+5. Отвечать на языке последнего сообщения пользователя: на русском, казахском или английском.
+6. Если пользователь просит события по всем городам, события в EVENTS_JSON даны по всем регионам — сгруппируй их по городам.
 
 Правила:
 - Не выдумывай события, сотрудников, адреса, даты, ссылки или контакты.
@@ -125,26 +126,34 @@ export function fallbackAgentReply({
   staff,
   region,
   city,
+  allRegions = false,
 }: {
   latestMessage: string;
   events: HubEvent[];
   staff: HubStaff[];
   region: string | null;
   city: string | null;
+  allRegions?: boolean;
 }) {
   const language = detectLanguage(latestMessage);
   const staffQuestion = isStaffQuestion(latestMessage);
 
-  if (!region) {
-    return language === "kk"
-      ? "Қалаңызды нақтылаңызшы. Мысалы: Астана, Алматы, Тараз, Павлодар."
+  if (!region && !allRegions) {
+    if (language === "kk") {
+      return "Қалаңызды нақтылаңызшы. Мысалы: Астана, Алматы, Тараз, Павлодар.";
+    }
+    return language === "en"
+      ? "Please tell me your city. For example: Astana, Almaty, Taraz, Pavlodar."
       : "Уточните город, пожалуйста. Например: Астана, Алматы, Тараз, Павлодар.";
   }
 
   if (staffQuestion) {
     if (!staff.length) {
-      return language === "kk"
-        ? `${city ?? "Бұл өңір"} бойынша команда деректері әлі жүктелмеген. Жаңартуларды хабтың Instagram парақшасынан қарауға болады.`
+      if (language === "kk") {
+        return `${city ?? "Бұл өңір"} бойынша команда деректері әлі жүктелмеген. Жаңартуларды хабтың Instagram парақшасынан қарауға болады.`;
+      }
+      return language === "en"
+        ? `No team data is loaded for ${city ?? "this region"} yet. Check the hub's Instagram for updates.`
         : `По ${city ?? "этому региону"} данные команды пока не загружены. Можно проверить обновления в Instagram хаба.`;
     }
 
@@ -161,37 +170,59 @@ export function fallbackAgentReply({
       )
       .join("\n");
 
-    return language === "kk"
-      ? `${city ?? "Өңір"} бойынша команда:\n${lines}`
+    if (language === "kk") {
+      return `${city ?? "Өңір"} бойынша команда:\n${lines}`;
+    }
+    return language === "en"
+      ? `Team of ${city ?? "the region"}:\n${lines}`
       : `Команда ${city ?? "региона"}:\n${lines}`;
   }
 
   if (!events.length) {
-    return language === "kk"
-      ? `${city ?? "Бұл өңір"} бойынша алдағы оқиғалар табылмады. Жаңартуларды хабтың Instagram парақшасынан қадағалаңыз.`
+    if (language === "kk") {
+      return `${city ?? "Бұл өңір"} бойынша алдағы оқиғалар табылмады. Жаңартуларды хабтың Instagram парақшасынан қадағалаңыз.`;
+    }
+    return language === "en"
+      ? `No upcoming events found for ${city ?? "this region"}. Follow the hub's Instagram for updates.`
       : `По ${city ?? "этому региону"} предстоящие события не найдены. Следите за обновлениями в Instagram хаба.`;
   }
 
+  const scopeKk = allRegions ? "Барлық хабтар" : city ?? "Өңір";
+  const scopeEn = allRegions ? "all hubs" : city ?? "the region";
+  const scopeRu = allRegions ? "всех хабов" : `города ${city ?? "регион"}`;
   const lead =
     language === "kk"
-      ? `${city ?? "Өңір"} бойынша ${events.length} алдағы оқиға таптым:`
-      : `Нашёл ${events.length} предстоящих события для города ${city ?? "регион"}:`;
+      ? `${scopeKk} бойынша ${events.length} алдағы оқиға таптым:`
+      : language === "en"
+        ? `Found ${events.length} upcoming events for ${scopeEn}:`
+        : `Нашёл ${events.length} предстоящих события для ${scopeRu}:`;
   const lines = events
-    .slice(0, 3)
+    .slice(0, allRegions ? 6 : 3)
     .map(
       (event) =>
-        `[${formatLabel(event.format)}] ${event.title} / ${event.date}${event.time ? ` · ${event.time}` : ""}${event.address ? ` · ${event.address}` : ""}`,
+        `[${formatLabel(event.format, language)}] ${event.title} / ${event.date}${event.time ? ` · ${event.time}` : ""}${allRegions ? ` · ${event.city}` : event.address ? ` · ${event.address}` : ""}`,
     )
     .join("\n");
 
   return `${lead}\n${lines}`;
 }
 
-export function detectLanguage(text: string) {
-  return /[әіңғүұқөһ]/i.test(text) ||
-    /\b(сәлем|қала|оқиға|іс-шара|команда|қайда|қашан)\b/i.test(text)
-    ? "kk"
-    : "ru";
+export function detectLanguage(text: string): "kk" | "ru" | "en" {
+  if (
+    /[әіңғүұқөһ]/i.test(text) ||
+    /\b(сәлем|қала|оқиға|іс-шара|қайда|қашан|аптада|барлық)\b/i.test(text)
+  ) {
+    return "kk";
+  }
+
+  return /[а-яё]/i.test(text) ? "ru" : "en";
+}
+
+/** Does the user want events across every hub rather than one region? */
+export function wantsAllRegions(text: string) {
+  return /(все\s?город|всех\s?город|по всем|всем хабам|барлық қала|барлық хаб|all\s?cit|all\s?hub|every\s?cit)/i.test(
+    text,
+  );
 }
 
 export function isStaffQuestion(text: string) {
@@ -200,7 +231,11 @@ export function isStaffQuestion(text: string) {
   );
 }
 
-function formatLabel(format: HubEvent["format"]) {
+function formatLabel(format: HubEvent["format"], language: "kk" | "ru" | "en") {
+  if (language === "en") {
+    return format.toUpperCase();
+  }
+
   if (format === "online") {
     return "ОНЛАЙН";
   }

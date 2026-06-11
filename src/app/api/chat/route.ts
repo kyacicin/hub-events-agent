@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   callGeminiAgent,
   fallbackAgentReply,
+  wantsAllRegions,
   type ChatMessage,
 } from "@/lib/agent";
 import { readEvents, readStaff } from "@/lib/dataStore";
@@ -9,6 +10,7 @@ import {
   dateKey,
   filterEvents,
   filterStaff,
+  filterUpcomingEvents,
   regionFromText,
 } from "@/lib/filter";
 import { HUB_ACCOUNTS } from "@/lib/hubAccounts";
@@ -33,14 +35,23 @@ export async function POST(request: Request) {
 
     const latestMessage = lastUserMessage(messages)?.content ?? "";
     const today = dateKey(new Date());
-    const region = detectRegion(messages);
+    const allRegions = wantsAllRegions(latestMessage);
+    const region = allRegions ? null : detectRegion(messages);
     const city = cityForRegion(region);
     const [allEvents, allStaff] = await Promise.all([
       readEvents(),
       readStaff(),
     ]);
-    const events = region ? filterEvents(allEvents, { region, today }) : [];
-    const staff = region ? filterStaff(allStaff, { region }) : [];
+    const events = allRegions
+      ? filterUpcomingEvents(allEvents, today)
+      : region
+        ? filterEvents(allEvents, { region, today })
+        : [];
+    const staff = allRegions
+      ? filterStaff(allStaff)
+      : region
+        ? filterStaff(allStaff, { region })
+        : [];
     let reply: string;
     let modelStatus: "ok" | "fallback" = "ok";
 
@@ -61,6 +72,7 @@ export async function POST(request: Request) {
         staff,
         region,
         city,
+        allRegions,
       });
       console.error(error instanceof Error ? error.message : String(error));
     }
