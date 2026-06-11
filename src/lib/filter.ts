@@ -141,6 +141,14 @@ export function regionFromText(text: string | null | undefined) {
     }
   }
 
+  // Kazakh is agglutinative: "Таразданмын" = Тараз + дан + мын. Allow a short
+  // letter tail after longer city stems so case/person suffixes still match.
+  for (const [city, region] of candidates) {
+    if (city.length >= 5 && hasLocationStem(normalized, city)) {
+      return region;
+    }
+  }
+
   return null;
 }
 
@@ -219,6 +227,14 @@ function hasLocationToken(text: string, token: string) {
   return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}(?=$|[^\\p{L}\\p{N}])`, "iu").test(
     text,
   );
+}
+
+function hasLocationStem(text: string, token: string) {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(
+    `(^|[^\\p{L}\\p{N}])${escaped}\\p{L}{1,7}(?=$|[^\\p{L}\\p{N}])`,
+    "iu",
+  ).test(text);
 }
 
 function compareEventsByDate(a: HubEvent, b: HubEvent) {

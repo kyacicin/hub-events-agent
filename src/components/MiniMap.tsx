@@ -3,39 +3,34 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Navigation, Compass } from 'lucide-react';
-import { HubCity } from '../types';
-import { HUB_LOCATIONS } from '../data';
+import { HubRegion } from '../types';
+import { HUB_LOCATIONS, MAP_BACKBONE, REGION_COORDS, mapNodes } from '../data';
 
 interface MiniMapProps {
-  targetCity: HubCity | string;
+  targetRegion: HubRegion;
   eventName: string;
   locationName: string;
 }
 
-export default function MiniMap({ targetCity, eventName, locationName }: MiniMapProps) {
-  // Track which city's route has finished its draw-in delay; deriving
+const HQ_REGION = 'astana';
+
+export default function MiniMap({ targetRegion, eventName, locationName }: MiniMapProps) {
+  // Track which region's route has finished its draw-in delay; deriving
   // routeAnimated from it replays the animation on target change without
   // setting state synchronously in the effect.
-  const [animatedCity, setAnimatedCity] = useState<string | null>(null);
-  const routeAnimated = animatedCity === targetCity;
-  const matchedHub = HUB_LOCATIONS[targetCity as HubCity] || HUB_LOCATIONS['Zhambyl'];
+  const [animatedRegion, setAnimatedRegion] = useState<string | null>(null);
+  const routeAnimated = animatedRegion === targetRegion;
+  const matchedHub = HUB_LOCATIONS[targetRegion] ?? HUB_LOCATIONS[HQ_REGION];
 
   useEffect(() => {
-    const timer = setTimeout(() => setAnimatedCity(String(targetCity)), 300);
+    const timer = setTimeout(() => setAnimatedRegion(String(targetRegion)), 300);
     return () => clearTimeout(timer);
-  }, [targetCity]);
+  }, [targetRegion]);
 
-  // Abstract geography coordinates for Kazakhstan Hub Networks
-  const hubs = [
-    { id: 'Astana', x: 320, y: 120, label: 'Astana Hub (HQ)' },
-    { id: 'Pavlodar', x: 420, y: 80, label: 'Pavlodar IT Hub' },
-    { id: 'Kyzylorda', x: 180, y: 220, label: 'Kyzylorda IT Hub' },
-    { id: 'Zhambyl', x: 260, y: 260, label: 'Zhambyl IT Hub' },
-    { id: 'Taraz', x: 250, y: 280, label: 'Taraz Innovation Hub' },
-  ];
-
-  const targetCoords = hubs.find(h => h.id === targetCity) || hubs[3]; // Fallback Zhambyl
-  const sourceCoords = hubs[0]; // Astana HQ is always starting/reference point for pathways!
+  const nodes = mapNodes();
+  const sourceCoords = REGION_COORDS[HQ_REGION];
+  const targetCoords = REGION_COORDS[targetRegion] ?? REGION_COORDS['zhambyl'];
+  const routePath = `M ${sourceCoords.x} ${sourceCoords.y} Q ${(sourceCoords.x + targetCoords.x) / 2 + 20} ${(sourceCoords.y + targetCoords.y) / 2 - 30} ${targetCoords.x} ${targetCoords.y}`;
 
   return (
     <div id="mini-map-container" className="relative p-4 rounded-3xl bg-neutral-900/80 border border-neutral-800 backdrop-blur-xl overflow-hidden mt-3 shadow-2xl">
@@ -46,21 +41,21 @@ export default function MiniMap({ targetCity, eventName, locationName }: MiniMap
       <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Map Header */}
-      <div className="flex items-start justify-between relative mb-3">
-        <div>
+      <div className="flex items-start justify-between relative mb-3 gap-3">
+        <div className="min-w-0">
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono tracking-wider font-semibold text-emerald-400 bg-emerald-950/40 border border-emerald-900/60 uppercase">
             <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
             Internal Route Planner
           </span>
-          <h4 className="text-sm font-sans font-medium text-neutral-100 mt-1">{eventName}</h4>
-          <p className="text-xs font-sans text-neutral-400 leading-tight">{locationName}</p>
+          <h4 className="text-sm font-sans font-medium text-neutral-100 mt-1 truncate">{eventName}</h4>
+          <p className="text-xs font-sans text-neutral-400 leading-tight truncate">{locationName}</p>
         </div>
-        <div className="text-right flex flex-col items-end">
+        <div className="text-right flex flex-col items-end shrink-0">
           <div className="flex items-center gap-1 text-emerald-400 text-xs font-mono">
             <Compass className="w-3 animate-spin-slow" />
             <span>HQ Link Active</span>
           </div>
-          <span className="text-[10px] text-neutral-500 font-mono mt-0.5">Route: Astana Headquarters → {matchedHub.name}</span>
+          <span className="text-[10px] text-neutral-500 font-mono mt-0.5">Astana HQ → {matchedHub.name}</span>
         </div>
       </div>
 
@@ -68,17 +63,28 @@ export default function MiniMap({ targetCity, eventName, locationName }: MiniMap
       <div className="relative w-full h-44 bg-neutral-950/90 rounded-2xl border border-neutral-800/80 overflow-hidden flex items-center justify-center">
         {/* Vector SVG Canvas */}
         <svg className="w-full h-full absolute inset-0 text-neutral-800" viewBox="0 0 500 320" xmlns="http://www.w3.org/2000/svg">
-          {/* Subtle connecting lines backbones between hubs */}
-          <line x1="320" y1="120" x2="420" y2="80" stroke="#262626" strokeWidth="1" strokeDasharray="3 3" />
-          <line x1="320" y1="120" x2="180" y2="220" stroke="#262626" strokeWidth="1" strokeDasharray="3 3" />
-          <line x1="320" y1="120" x2="260" y2="260" stroke="#262626" strokeWidth="1" strokeDasharray="3 3" />
-          <line x1="180" y1="220" x2="260" y2="260" stroke="#262626" strokeWidth="1" strokeDasharray="3 3" />
-          <line x1="260" y1="260" x2="250" y2="280" stroke="#262626" strokeWidth="1" />
+          {/* Subtle backbone lines from HQ to major regional hubs */}
+          {MAP_BACKBONE.map((region) => {
+            const coords = REGION_COORDS[region];
+            if (!coords) return null;
+            return (
+              <line
+                key={region}
+                x1={sourceCoords.x}
+                y1={sourceCoords.y}
+                x2={coords.x}
+                y2={coords.y}
+                stroke="#262626"
+                strokeWidth="1"
+                strokeDasharray="3 3"
+              />
+            );
+          })}
 
           {/* Animated Route Line from HQ Astana to Target */}
           {routeAnimated && (
             <motion.path
-              d={`M ${sourceCoords.x} ${sourceCoords.y} Q ${(sourceCoords.x + targetCoords.x)/2 + 20} ${(sourceCoords.y + targetCoords.y)/2 - 30} ${targetCoords.x} ${targetCoords.y}`}
+              d={routePath}
               fill="none"
               stroke="url(#route-gradient)"
               strokeWidth="2.5"
@@ -91,7 +97,7 @@ export default function MiniMap({ targetCity, eventName, locationName }: MiniMap
           {/* Animated dashes travelling along path */}
           {routeAnimated && (
             <path
-              d={`M ${sourceCoords.x} ${sourceCoords.y} Q ${(sourceCoords.x + targetCoords.x)/2 + 20} ${(sourceCoords.y + targetCoords.y)/2 - 30} ${targetCoords.x} ${targetCoords.y}`}
+              d={routePath}
               fill="none"
               stroke="#10b981"
               strokeWidth="2.5"
@@ -108,18 +114,19 @@ export default function MiniMap({ targetCity, eventName, locationName }: MiniMap
             </linearGradient>
           </defs>
 
-          {/* Background Hub Nodes */}
-          {hubs.map((hub) => {
-            const isTarget = hub.id === targetCity;
-            const isHQ = hub.id === 'Astana';
+          {/* Hub Nodes */}
+          {nodes.map((node) => {
+            const isTarget = node.region === targetRegion;
+            const isHQ = node.region === HQ_REGION;
+            const showLabel = isTarget || isHQ || MAP_BACKBONE.includes(node.region);
 
             return (
-              <g key={hub.id}>
+              <g key={node.region}>
                 {/* Pulse ring for target or HQ */}
                 {(isTarget || isHQ) && (
                   <circle
-                    cx={hub.x}
-                    cy={hub.y}
+                    cx={node.x}
+                    cy={node.y}
                     r={isTarget ? 15 : 11}
                     className={`fill-none ${isTarget ? 'stroke-emerald-400' : 'stroke-blue-400'} opacity-35`}
                   >
@@ -130,25 +137,27 @@ export default function MiniMap({ targetCity, eventName, locationName }: MiniMap
 
                 {/* Base node circle */}
                 <circle
-                  cx={hub.x}
-                  cy={hub.y}
-                  r={isTarget ? 5.5 : isHQ ? 4.5 : 3.5}
+                  cx={node.x}
+                  cy={node.y}
+                  r={isTarget ? 5.5 : isHQ ? 4.5 : 3}
                   className={`${
                     isTarget ? 'fill-emerald-400' : isHQ ? 'fill-blue-400' : 'fill-neutral-700'
                   }`}
                 />
 
-                {/* City name text annotation */}
-                <text
-                  x={hub.x}
-                  y={hub.y - (isTarget ? 10 : 8)}
-                  textAnchor="middle"
-                  className={`font-mono text-[8px] tracking-tight ${
-                    isTarget ? 'fill-emerald-400 font-bold' : isHQ ? 'fill-blue-300' : 'fill-neutral-500'
-                  }`}
-                >
-                  {hub.id}
-                </text>
+                {/* Region name annotation (target, HQ and backbone hubs only) */}
+                {showLabel && (
+                  <text
+                    x={node.x}
+                    y={node.y - (isTarget ? 10 : 8)}
+                    textAnchor="middle"
+                    className={`font-mono text-[8px] tracking-tight ${
+                      isTarget ? 'fill-emerald-400 font-bold' : isHQ ? 'fill-blue-300' : 'fill-neutral-500'
+                    }`}
+                  >
+                    {node.label}
+                  </text>
+                )}
               </g>
             );
           })}
@@ -160,21 +169,21 @@ export default function MiniMap({ targetCity, eventName, locationName }: MiniMap
           <span>Hub Coordinates Locked</span>
         </div>
         <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded bg-neutral-900/90 border border-neutral-800 text-[9px] font-mono text-emerald-400 font-medium">
-          <span>Est: ~1.2 hrs travel time</span>
+          <span>Сеть региональных хабов</span>
         </div>
       </div>
 
       {/* Route Info Cards */}
       <div className="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-neutral-800">
         <div className="p-2 rounded bg-neutral-950/50 border border-neutral-900 text-left">
-          <p className="text-[10px] font-sans text-neutral-500 uppercase tracking-wider">Start Location</p>
-          <p className="text-xs text-neutral-300 font-medium truncate">Astana Hub HQ</p>
-          <p className="text-[9px] text-neutral-500">Mangilik El Ave, Astana</p>
+          <p className="text-[10px] font-sans text-neutral-500 uppercase tracking-wider">Старт</p>
+          <p className="text-xs text-neutral-300 font-medium truncate">{HUB_LOCATIONS[HQ_REGION].name}</p>
+          <p className="text-[9px] text-neutral-500 truncate">{HUB_LOCATIONS[HQ_REGION].fullAddress}</p>
         </div>
         <div className="p-2 rounded bg-neutral-950/50 border border-emerald-950/40 text-left">
-          <p className="text-[10px] font-sans text-emerald-500 uppercase tracking-wider">Terminal Ingress</p>
+          <p className="text-[10px] font-sans text-emerald-500 uppercase tracking-wider">Точка назначения</p>
           <p className="text-xs text-neutral-300 font-medium truncate">{matchedHub.name}</p>
-          <p className="text-[9px] text-neutral-500 truncate">{matchedHub.fullAddress.split(',')[0]}</p>
+          <p className="text-[9px] text-neutral-500 truncate">{locationName || matchedHub.fullAddress}</p>
         </div>
       </div>
 

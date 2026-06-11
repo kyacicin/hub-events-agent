@@ -2,23 +2,24 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, ChevronDown, Eye, EyeOff, Send, BadgeCheck, MapPin } from 'lucide-react';
+import { Users, ChevronDown, Eye, EyeOff, Send, BadgeCheck, MapPin, Mail } from 'lucide-react';
 import InstagramIcon from './InstagramIcon';
-import { CHUBS, HUB_LOCATIONS } from '../data';
-import { HubCity } from '../types';
+import { HUB_LOCATIONS } from '../data';
+import { HubRegion, UiMember } from '../types';
 
 interface TeamDeckProps {
-  activeCity: HubCity;
+  members: UiMember[];
+  activeRegion: HubRegion;
   onSaveToast?: (message: string) => void;
 }
 
-export default function TeamDeck({ activeCity, onSaveToast }: TeamDeckProps) {
+export default function TeamDeck({ members, activeRegion, onSaveToast }: TeamDeckProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revealedIds, setRevealedIds] = useState<string[]>([]);
 
   // Active-hub members float to the top of the deck
-  const members = [...CHUBS].sort((a, b) =>
-    Number(b.hub === activeCity) - Number(a.hub === activeCity)
+  const sorted = [...members].sort((a, b) =>
+    Number(b.hub === activeRegion) - Number(a.hub === activeRegion)
   );
 
   const toggleExpand = (id: string) => {
@@ -31,9 +32,18 @@ export default function TeamDeck({ activeCity, onSaveToast }: TeamDeckProps) {
       prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
     );
     if (willReveal && onSaveToast) {
-      onSaveToast(`🔓 Contact channels for ${name} parsed and verified`);
+      onSaveToast(`🔓 Контакты «${name}» открыты`);
     }
   };
+
+  if (!members.length) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 bg-neutral-900/40 rounded-3xl border border-neutral-800 text-neutral-400">
+        <Users className="w-8 h-8 text-neutral-600 mb-2" />
+        <p className="text-sm font-sans">Данные о команде пока не загружены.</p>
+      </div>
+    );
+  }
 
   return (
     <div id="team-deck-component" className="w-full bg-neutral-900/40 p-4 sm:p-5 rounded-3xl border border-neutral-800 backdrop-blur-xl relative select-none">
@@ -56,10 +66,12 @@ export default function TeamDeck({ activeCity, onSaveToast }: TeamDeckProps) {
 
       {/* Profile Chips */}
       <div className="space-y-2.5">
-        {members.map((member) => {
+        {sorted.map((member) => {
           const isExpanded = expandedId === member.id;
           const isRevealed = revealedIds.includes(member.id);
-          const isActiveHub = member.hub === activeCity;
+          const isActiveHub = member.hub === activeRegion;
+          const hubLocation = HUB_LOCATIONS[member.hub];
+          const channels = [member.telegram, member.instagram, member.contact].filter(Boolean);
 
           return (
             <div
@@ -95,7 +107,7 @@ export default function TeamDeck({ activeCity, onSaveToast }: TeamDeckProps) {
                       <p className="text-sm font-sans font-bold text-neutral-100 truncate">{member.name}</p>
                       <BadgeCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                     </div>
-                    <p className="text-[11px] font-mono text-neutral-500 truncate">{member.role}</p>
+                    <p className="text-[11px] font-mono text-neutral-500 truncate">{member.role} · {member.cityName}</p>
                   </div>
 
                   <ChevronDown
@@ -116,7 +128,7 @@ export default function TeamDeck({ activeCity, onSaveToast }: TeamDeckProps) {
                       className="overflow-hidden"
                     >
                       <div className="px-3 pb-3 pt-1 border-t border-neutral-900">
-                        {/* Incubator Dossier */}
+                        {/* Dossier */}
                         <p className="text-xs text-neutral-400 leading-relaxed font-sans mt-2">
                           {member.bio}
                         </p>
@@ -134,10 +146,12 @@ export default function TeamDeck({ activeCity, onSaveToast }: TeamDeckProps) {
                         </div>
 
                         {/* Hub assignment */}
-                        <div className="flex items-center gap-1.5 mt-3 text-[10px] font-mono text-neutral-500">
-                          <MapPin className="w-3 text-emerald-400" />
-                          <span>{HUB_LOCATIONS[member.hub].name} — {HUB_LOCATIONS[member.hub].fullAddress}</span>
-                        </div>
+                        {hubLocation && (
+                          <div className="flex items-center gap-1.5 mt-3 text-[10px] font-mono text-neutral-500">
+                            <MapPin className="w-3 text-emerald-400" />
+                            <span>{hubLocation.name} — {hubLocation.fullAddress}</span>
+                          </div>
+                        )}
 
                         {/* Contact Reveal */}
                         <button
@@ -149,7 +163,7 @@ export default function TeamDeck({ activeCity, onSaveToast }: TeamDeckProps) {
                           }`}
                         >
                           {isRevealed ? <EyeOff className="w-3.5" /> : <Eye className="w-3.5" />}
-                          {isRevealed ? 'Hide Contact Channels' : 'Contact Reveal'}
+                          {isRevealed ? 'Скрыть контакты' : 'Показать контакты'}
                         </button>
 
                         {/* Social Revelation: sliding handles */}
@@ -162,32 +176,54 @@ export default function TeamDeck({ activeCity, onSaveToast }: TeamDeckProps) {
                               transition={{ duration: 0.3, ease: 'easeOut' }}
                               className="overflow-hidden"
                             >
-                              <div className="grid grid-cols-2 gap-2 mt-2">
-                                <a
-                                  href={`https://t.me/${member.telegram.replace('@', '')}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 p-2 rounded-xl bg-blue-950/30 border border-blue-900/40 text-blue-400 hover:bg-blue-950/50 transition-all"
-                                >
-                                  <Send className="w-3.5 shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="text-[9px] font-mono uppercase text-blue-500/70">Telegram</p>
-                                    <p className="text-[11px] font-mono font-bold truncate">{member.telegram}</p>
-                                  </div>
-                                </a>
-                                <a
-                                  href={`https://www.instagram.com/${member.instagram.replace('@', '')}/`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 p-2 rounded-xl bg-pink-950/30 border border-pink-900/40 text-pink-400 hover:bg-pink-950/50 transition-all"
-                                >
-                                  <InstagramIcon className="w-3.5 shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="text-[9px] font-mono uppercase text-pink-500/70">Instagram</p>
-                                    <p className="text-[11px] font-mono font-bold truncate">{member.instagram}</p>
-                                  </div>
-                                </a>
-                              </div>
+                              {channels.length ? (
+                                <div className={`grid gap-2 mt-2 ${channels.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                  {member.telegram && (
+                                    <a
+                                      href={`https://t.me/${member.telegram.replace('@', '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-2 p-2 rounded-xl bg-blue-950/30 border border-blue-900/40 text-blue-400 hover:bg-blue-950/50 transition-all"
+                                    >
+                                      <Send className="w-3.5 shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="text-[9px] font-mono uppercase text-blue-500/70">Telegram</p>
+                                        <p className="text-[11px] font-mono font-bold truncate">{member.telegram}</p>
+                                      </div>
+                                    </a>
+                                  )}
+                                  {member.instagram && (
+                                    <a
+                                      href={`https://www.instagram.com/${member.instagram.replace('@', '')}/`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-2 p-2 rounded-xl bg-pink-950/30 border border-pink-900/40 text-pink-400 hover:bg-pink-950/50 transition-all"
+                                    >
+                                      <InstagramIcon className="w-3.5 shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="text-[9px] font-mono uppercase text-pink-500/70">Instagram</p>
+                                        <p className="text-[11px] font-mono font-bold truncate">{member.instagram}</p>
+                                      </div>
+                                    </a>
+                                  )}
+                                  {member.contact && (
+                                    <a
+                                      href={`mailto:${member.contact}`}
+                                      className="flex items-center gap-2 p-2 rounded-xl bg-emerald-950/30 border border-emerald-900/40 text-emerald-400 hover:bg-emerald-950/50 transition-all"
+                                    >
+                                      <Mail className="w-3.5 shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="text-[9px] font-mono uppercase text-emerald-500/70">Email</p>
+                                        <p className="text-[11px] font-mono font-bold truncate">{member.contact}</p>
+                                      </div>
+                                    </a>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="mt-2 p-2 rounded-xl bg-neutral-900/60 border border-neutral-800 text-[10px] font-mono text-neutral-500">
+                                  Личные контакты не опубликованы — напишите в официальный Instagram хаба.
+                                </p>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>

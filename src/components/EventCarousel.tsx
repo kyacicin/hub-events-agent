@@ -3,13 +3,20 @@
 import { useState, useEffect } from 'react';
 import { Heart, ChevronRight, ChevronLeft, Calendar, Clock, MapPin, CheckCircle } from 'lucide-react';
 import InstagramIcon from './InstagramIcon';
-import { HubEvent } from '../types';
+import { hasMapRoute } from '../data';
+import { UiEvent, UiEventFormat } from '../types';
 
 interface EventCarouselProps {
-  events: HubEvent[];
-  onShowDirections?: (event: HubEvent) => void;
+  events: UiEvent[];
+  onShowDirections?: (event: UiEvent) => void;
   onSaveToast?: (message: string) => void;
 }
+
+const FORMAT_BADGE: Record<UiEventFormat, { pill: string; dot: string }> = {
+  OFFLINE: { pill: 'bg-red-500 text-white shadow-md shadow-red-500/20', dot: 'bg-white animate-pulse' },
+  ONLINE: { pill: 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/20', dot: 'bg-neutral-950' },
+  HYBRID: { pill: 'bg-amber-500 text-neutral-950 shadow-md shadow-amber-500/20', dot: 'bg-neutral-950 animate-pulse' },
+};
 
 export default function EventCarousel({ events, onShowDirections, onSaveToast }: EventCarouselProps) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
@@ -37,10 +44,10 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
     let updated: string[];
     if (savedIds.includes(eventId)) {
       updated = savedIds.filter(id => id !== eventId);
-      if (onSaveToast) onSaveToast(`Removed "${title}" from saved events`);
+      if (onSaveToast) onSaveToast(`«${title}» убрано из сохранённых`);
     } else {
       updated = [...savedIds, eventId];
-      if (onSaveToast) onSaveToast(`Saved "${title}" to local bookmarks!`);
+      if (onSaveToast) onSaveToast(`«${title}» сохранено в закладки!`);
     }
     setSavedIds(updated);
     try {
@@ -70,7 +77,7 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
     return (
       <div className="flex flex-col items-center justify-center p-8 bg-neutral-900/40 rounded-3xl border border-neutral-800 text-neutral-400">
         <Calendar className="w-8 h-8 text-neutral-600 mb-2" />
-        <p className="text-sm font-sans">No events loaded for this region.</p>
+        <p className="text-sm font-sans">Предстоящих событий в этом регионе пока нет.</p>
       </div>
     );
   }
@@ -141,14 +148,10 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
                     {/* Dark gradient shadow inside image */}
                     <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent" />
 
-                    {/* Format Badge (high contrast "ONLINE" or "OFFLINE") */}
+                    {/* Format Badge (high contrast ONLINE / OFFLINE / HYBRID) */}
                     <div className="absolute top-2 left-2">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold tracking-wider ${
-                        event.format === 'OFFLINE'
-                          ? 'bg-red-500 text-white shadow-md shadow-red-500/20'
-                          : 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/20'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${event.format === 'OFFLINE' ? 'bg-white animate-pulse' : 'bg-neutral-950'}`} />
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold tracking-wider ${FORMAT_BADGE[event.format].pill}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${FORMAT_BADGE[event.format].dot}`} />
                         {event.format}
                       </span>
                     </div>
@@ -185,10 +188,10 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3" />
-                          <span>{event.time}</span>
+                          <span>{event.time || '—'}</span>
                         </span>
                         <span className="text-emerald-500 text-[10px] bg-emerald-950/30 border border-emerald-900/40 px-1 rounded uppercase">
-                          {event.hub} City
+                          {event.cityName}
                         </span>
                       </div>
 
@@ -204,18 +207,23 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast }:
 
                     {/* Actions and Locations */}
                     <div className="mt-4">
-                      {event.format === 'OFFLINE' ? (
+                      {event.format !== 'ONLINE' && hasMapRoute(event.hub) && onShowDirections ? (
                         <button
-                          onClick={() => onShowDirections && onShowDirections(event)}
+                          onClick={() => onShowDirections(event)}
                           className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-sans font-medium rounded-xl text-neutral-900 bg-emerald-400 hover:bg-emerald-300 transition-all duration-250 cursor-pointer shadow-lg shadow-emerald-400/5 focus:outline-none"
                         >
                           <MapPin className="w-3.5" />
-                          Get Directions (Mini-Map)
+                          Маршрут (Mini-Map)
                         </button>
-                      ) : (
+                      ) : event.format === 'ONLINE' ? (
                         <div className="flex items-center justify-center gap-2 px-3 py-2 text-xs font-mono font-semibold rounded-xl text-emerald-400 bg-emerald-950/20 border border-emerald-900/40">
-                          <CheckCircle className="w-3.5" />
-                          Streaming Link Active
+                          <CheckCircle className="w-3.5 shrink-0" />
+                          <span className="truncate">{event.locationName}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2 px-3 py-2 text-xs font-mono font-semibold rounded-xl text-neutral-300 bg-neutral-950/40 border border-neutral-800">
+                          <MapPin className="w-3.5 shrink-0" />
+                          <span className="truncate">{event.locationName}</span>
                         </div>
                       )}
                     </div>
