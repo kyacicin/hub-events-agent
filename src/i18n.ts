@@ -5,9 +5,9 @@
 export type Lang = 'ru' | 'kk' | 'en';
 
 export const LANGS: Array<{ code: Lang; label: string }> = [
-  { code: 'ru', label: 'RU' },
   { code: 'kk', label: 'KZ' },
   { code: 'en', label: 'EN' },
+  { code: 'ru', label: 'RU' },
 ];
 
 type Dict = Record<string, string>;
@@ -19,7 +19,7 @@ const ru: Dict = {
   tabTeam: 'Команда',
   tabSchedule: 'Расписание',
   chatIntro1:
-    '👋 Сәлем! Я AI-ассистент региональных хабов Astana Hub. Напишите свой город — найду предстоящие события, форматы, адреса и контакты команды.',
+    'Сәлем! Я AI-ассистент региональных хабов Astana Hub. Напишите свой город — найду предстоящие события, форматы, адреса и контакты команды.',
   chatIntro2:
     'Например: «Привет, я из Тараза. Что есть в ближайшее время?» — или воспользуйтесь быстрыми действиями внизу.',
   chatPlaceholder: 'Напишите свой город и вопрос...',
@@ -32,21 +32,21 @@ const ru: Dict = {
   chatFallbackNote: 'Ответ собран локально без Gemini API.',
   chatError: 'Не удалось получить ответ агента.',
   chatTryLater: 'Попробуйте ещё раз чуть позже.',
-  actionFindEvents: '🔍 Найти события',
-  actionAllCities: '🌍 Все города',
-  actionOnline: '💻 Онлайн',
-  actionThisWeek: '🗓 На этой неделе',
+  actionFindEvents: 'Найти события',
+  actionAllCities: 'Все города',
+  actionOnline: 'Онлайн',
+  actionThisWeek: 'На этой неделе',
   promptFindEvents: 'Какие события есть в ближайшее время?',
   promptAllCities: 'Покажи события во всех городах',
   promptOnline: 'Какие онлайн-события есть в ближайшее время?',
   promptThisWeek: 'Что проходит на этой неделе?',
-  showMap: '📍 Показать маршрут',
+  showMap: 'Показать маршрут',
   hideMap: 'Скрыть карту',
   openPost: 'Открыть пост',
-  addCalendar: '🗓 В календарь',
+  addCalendar: 'В календарь',
   addedCalendar: 'сохранено в календарь! (демо)',
   teamContacts: 'Контакты команды',
-  openTeamDeck: '📁 Открыть Team Deck',
+  openTeamDeck: 'Открыть Team Deck',
   moreInPanel: 'ещё в панели «События»',
   regionalEvents: 'События региона',
   noEvents: 'Предстоящих событий в этом регионе пока нет.',
@@ -77,7 +77,8 @@ const ru: Dict = {
   plottingInline: 'Строю интерактивный маршрут внутри чата...',
   switchedHub: 'Активный хаб:',
   openedTeamDeck: 'Открыт Team Deck!',
-  agentRequestError: '⚠️ Ошибка запроса к агенту',
+  agentRequestError: 'Ошибка запроса к агенту',
+  bioSource: 'Данные собраны из Instagram хаба.',
   mon: 'Понедельник', tue: 'Вторник', wed: 'Среда', thu: 'Четверг',
   fri: 'Пятница', sat: 'Суббота', sun: 'Воскресенье',
 };
@@ -89,7 +90,7 @@ const kk: Dict = {
   tabTeam: 'Команда',
   tabSchedule: 'Кесте',
   chatIntro1:
-    '👋 Сәлем! Мен Astana Hub аймақтық хабтарының AI-ассистентімін. Қалаңызды жазыңыз — алдағы іс-шараларды, форматтарды, мекенжайлар мен команда контактілерін табамын.',
+    'Сәлем! Мен Astana Hub аймақтық хабтарының AI-ассистентімін. Қалаңызды жазыңыз — алдағы іс-шараларды, форматтарды, мекенжайлар мен команда контактілерін табамын.',
   chatIntro2:
     'Мысалы: «Сәлем, мен Таразданмын. Жақын арада не бар?» — немесе төмендегі жылдам әрекеттерді пайдаланыңыз.',
   chatPlaceholder: 'Қалаңыз бен сұрағыңызды жазыңыз...',
@@ -102,21 +103,21 @@ const kk: Dict = {
   chatFallbackNote: 'Жауап Gemini API-сыз жергілікті құрастырылды.',
   chatError: 'Агенттен жауап алу мүмкін болмады.',
   chatTryLater: 'Сәл кейінірек қайталап көріңіз.',
-  actionFindEvents: '🔍 Іс-шара табу',
-  actionAllCities: '🌍 Барлық қалалар',
-  actionOnline: '💻 Онлайн',
-  actionThisWeek: '🗓 Осы аптада',
+  actionFindEvents: 'Іс-шара табу',
+  actionAllCities: 'Барлық қалалар',
+  actionOnline: 'Онлайн',
+  actionThisWeek: 'Осы аптада',
   promptFindEvents: 'Жақын арада қандай іс-шаралар бар?',
   promptAllCities: 'Барлық қалалардағы іс-шараларды көрсет',
   promptOnline: 'Қандай онлайн іс-шаралар бар?',
   promptThisWeek: 'Осы аптада не өтеді?',
-  showMap: '📍 Маршрутты көрсету',
+  showMap: 'Маршрутты көрсету',
   hideMap: 'Картаны жасыру',
   openPost: 'Постты ашу',
-  addCalendar: '🗓 Күнтізбеге',
+  addCalendar: 'Күнтізбеге',
   addedCalendar: 'күнтізбеге сақталды! (демо)',
   teamContacts: 'Команда контактілері',
-  openTeamDeck: '📁 Team Deck ашу',
+  openTeamDeck: 'Team Deck ашу',
   moreInPanel: 'тағы — «Іс-шаралар» панелінде',
   regionalEvents: 'Аймақ іс-шаралары',
   noEvents: 'Бұл аймақта алдағы іс-шаралар әзірге жоқ.',
@@ -147,7 +148,8 @@ const kk: Dict = {
   plottingInline: 'Чат ішінде интерактивті маршрут құрамын...',
   switchedHub: 'Белсенді хаб:',
   openedTeamDeck: 'Team Deck ашылды!',
-  agentRequestError: '⚠️ Агентке сұраныс қатесі',
+  agentRequestError: 'Агентке сұраныс қатесі',
+  bioSource: 'Деректер хабтың Instagram-ынан жиналған.',
   mon: 'Дүйсенбі', tue: 'Сейсенбі', wed: 'Сәрсенбі', thu: 'Бейсенбі',
   fri: 'Жұма', sat: 'Сенбі', sun: 'Жексенбі',
 };
@@ -159,7 +161,7 @@ const en: Dict = {
   tabTeam: 'Team',
   tabSchedule: 'Schedule',
   chatIntro1:
-    "👋 Hi! I'm the AI assistant of Astana Hub regional hubs. Tell me your city — I'll find upcoming events, formats, addresses and team contacts.",
+    "Hi! I'm the AI assistant of Astana Hub regional hubs. Tell me your city — I'll find upcoming events, formats, addresses and team contacts.",
   chatIntro2:
     'For example: "Hi, I\'m from Taraz. What\'s coming up?" — or use the quick actions below.',
   chatPlaceholder: 'Type your city and question...',
@@ -172,21 +174,21 @@ const en: Dict = {
   chatFallbackNote: 'Reply built locally without the Gemini API.',
   chatError: 'Could not get a response from the agent.',
   chatTryLater: 'Please try again in a moment.',
-  actionFindEvents: '🔍 Find events',
-  actionAllCities: '🌍 All cities',
-  actionOnline: '💻 Online',
-  actionThisWeek: '🗓 This week',
+  actionFindEvents: 'Find events',
+  actionAllCities: 'All cities',
+  actionOnline: 'Online',
+  actionThisWeek: 'This week',
   promptFindEvents: 'What events are coming up?',
   promptAllCities: 'Show events in all cities',
   promptOnline: 'What online events are coming up?',
   promptThisWeek: "What's happening this week?",
-  showMap: '📍 Show route',
+  showMap: 'Show route',
   hideMap: 'Hide map',
   openPost: 'Open post',
-  addCalendar: '🗓 Add to calendar',
+  addCalendar: 'Add to calendar',
   addedCalendar: 'saved to calendar! (demo)',
   teamContacts: 'Team contacts',
-  openTeamDeck: '📁 Open Team Deck',
+  openTeamDeck: 'Open Team Deck',
   moreInPanel: 'more in the Events panel',
   regionalEvents: 'Regional events',
   noEvents: 'No upcoming events in this region yet.',
@@ -217,7 +219,8 @@ const en: Dict = {
   plottingInline: 'Plotting an interactive route inside the chat...',
   switchedHub: 'Active hub:',
   openedTeamDeck: 'Team Deck opened!',
-  agentRequestError: '⚠️ Agent request error',
+  agentRequestError: 'Agent request error',
+  bioSource: "Data collected from the hub's Instagram.",
   mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
   fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
 };
@@ -228,14 +231,84 @@ export function getDict(lang: Lang): Dict {
   return DICTS[lang] ?? ru;
 }
 
-const DAY_LOCALES: Record<Lang, string> = { ru: 'ru-RU', kk: 'kk-KZ', en: 'en-GB' };
+const MONTHS: Record<Lang, string[]> = {
+  ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+  kk: ['қаңтар', 'ақпан', 'наурыз', 'сәуір', 'мамыр', 'маусым', 'шілде', 'тамыз', 'қыркүйек', 'қазан', 'қараша', 'желтоқсан'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+};
 
-/** Localized display date for an ISO date, e.g. "сб, 14 июня" / "Sat, 14 June". */
+const WEEKDAYS_SHORT: Record<Lang, string[]> = {
+  ru: ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'],
+  kk: ['жс', 'дс', 'сс', 'ср', 'бс', 'жм', 'сб'],
+  en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+};
+
+/**
+ * Localized display date for an ISO date, e.g. "сб, 14 июня" / "сб, 14 маусым"
+ * / "Sat, 14 June". Built from explicit tables because the kk-KZ ICU data
+ * renders short months as "М06".
+ */
 export function formatDay(isoDate: string, lang: Lang): string {
-  return new Intl.DateTimeFormat(DAY_LOCALES[lang] ?? 'ru-RU', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'UTC',
-  }).format(new Date(`${isoDate}T00:00:00Z`));
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  return `${WEEKDAYS_SHORT[lang][d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[lang][d.getUTCMonth()]}`;
+}
+
+// ---------------------------------------------------------------------------
+// Data-driven strings: the parsed dataset stores cities, roles and template
+// names in Russian; these helpers localize them for the KZ/EN interface.
+// ---------------------------------------------------------------------------
+
+const CITY_I18N: Record<string, { kk: string; en: string }> = {
+  'Астана': { kk: 'Астана', en: 'Astana' },
+  'Алматы': { kk: 'Алматы', en: 'Almaty' },
+  'Тараз': { kk: 'Тараз', en: 'Taraz' },
+  'Павлодар': { kk: 'Павлодар', en: 'Pavlodar' },
+  'Жезказган': { kk: 'Жезқазған', en: 'Zhezkazgan' },
+  'Кызылорда': { kk: 'Қызылорда', en: 'Kyzylorda' },
+  'Туркестан': { kk: 'Түркістан', en: 'Turkistan' },
+  'Уральск': { kk: 'Орал', en: 'Uralsk' },
+  'Оскемен': { kk: 'Өскемен', en: 'Oskemen' },
+  'Актобе': { kk: 'Ақтөбе', en: 'Aktobe' },
+  'Актау': { kk: 'Ақтау', en: 'Aktau' },
+  'Атырау': { kk: 'Атырау', en: 'Atyrau' },
+  'Костанай': { kk: 'Қостанай', en: 'Kostanay' },
+  'Кокшетау': { kk: 'Көкшетау', en: 'Kokshetau' },
+  'Петропавловск': { kk: 'Петропавл', en: 'Petropavlovsk' },
+  'Шымкент': { kk: 'Шымкент', en: 'Shymkent' },
+  'Талдыкорган': { kk: 'Талдықорған', en: 'Taldykorgan' },
+  'Семей': { kk: 'Семей', en: 'Semey' },
+  'Алатау': { kk: 'Алатау', en: 'Alatau' },
+};
+
+export function localizeCity(city: string, lang: Lang): string {
+  if (lang === 'ru') return city;
+  return CITY_I18N[city]?.[lang] ?? city;
+}
+
+const ROLE_I18N: Record<string, { kk: string; en: string }> = {
+  'Официальный аккаунт хаба': { kk: 'Хабтың ресми аккаунты', en: 'Official hub account' },
+  'Директор': { kk: 'Директор', en: 'Director' },
+  'Региональный менеджер': { kk: 'Аймақтық менеджер', en: 'Regional manager' },
+  'Команда хаба': { kk: 'Хаб командасы', en: 'Hub team' },
+};
+
+export function localizeRole(role: string, lang: Lang): string {
+  if (lang === 'ru') return role;
+  return ROLE_I18N[role]?.[lang] ?? role;
+}
+
+/** Template names like "Команда Astana Hub" -> "Astana Hub командасы" / "Astana Hub team". */
+export function localizeName(name: string, lang: Lang): string {
+  const match = name.match(/^Команда\s+(.+)$/);
+  if (!match) return name;
+  if (lang === 'kk') return `${match[1]} командасы`;
+  if (lang === 'en') return `${match[1]} team`;
+  return name;
+}
+
+/** Localizes the ", Казахстан" country suffix in generated hub addresses. */
+export function localizeAddress(address: string, lang: Lang): string {
+  if (lang === 'kk') return address.replace(/, Казахстан$/, ', Қазақстан');
+  if (lang === 'en') return address.replace(/, Казахстан$/, ', Kazakhstan');
+  return address;
 }

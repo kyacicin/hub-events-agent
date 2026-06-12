@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, MapPin, Paperclip, Clipboard, Code, Clock, Calendar, ExternalLink } from 'lucide-react';
 import { HUB_LOCATIONS, hasMapRoute, isStaffQuery, toUiEvent, toUiMember } from '../data';
 import { ChatMessage, HubOption, HubRegion, UiEvent, UiEventFormat } from '../types';
-import { Lang, formatDay } from '../i18n';
+import { Lang, formatDay, localizeCity, localizeName, localizeRole } from '../i18n';
 import type { HubEvent, HubStaff } from '@/lib/schemas';
 import MiniMap from './MiniMap';
 
@@ -135,7 +135,7 @@ export default function SleekChat({
         e => e.format !== 'ONLINE' && hasMapRoute(e.hub),
       );
 
-      const aiMsg = makeMessage('assistant', data.reply, {
+      const aiMsg = makeMessage('assistant', data.reply.replace(/\*\*/g, ''), {
         carouselEvents: uiEvents.length ? uiEvents : undefined,
         teamMembers: uiMembers.length ? uiMembers : undefined,
         showMapForEventId: mappableEvent?.id,
@@ -155,7 +155,7 @@ export default function SleekChat({
       const text = error instanceof Error ? error.message : t.chatError;
       setMessages(prev => [
         ...prev,
-        makeMessage('assistant', `⚠️ ${text} ${t.chatTryLater}`),
+        makeMessage('assistant', `${text} ${t.chatTryLater}`),
       ]);
       onSaveToast(t.agentRequestError);
     } finally {
@@ -208,7 +208,7 @@ export default function SleekChat({
               className={`flex flex-col ${isAI ? 'items-start' : 'items-end'} gap-1`}
             >
               <div className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 px-1">
-                {isAI ? '🤖 AI Assistant' : `👤 ${t.chatYou}`} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {isAI ? 'AI Assistant' : t.chatYou} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
 
               {/* Chat Bubble */}
@@ -238,7 +238,7 @@ export default function SleekChat({
                         <div className="flex items-center gap-1.5 text-[9px] font-mono font-bold tracking-wider">
                           <span className={`w-1.5 h-1.5 rounded-full ${FORMAT_DOT[event.format]}`} />
                           <span className="text-neutral-500 dark:text-neutral-400">{event.format}</span>
-                          <span className="ml-auto text-emerald-600 dark:text-emerald-500 uppercase">{event.cityName}</span>
+                          <span className="ml-auto text-emerald-600 dark:text-emerald-500 uppercase">{localizeCity(event.cityName, lang)}</span>
                         </div>
                         <h5 className="text-xs font-sans font-bold leading-tight text-neutral-900 dark:text-neutral-100 line-clamp-2">
                           {event.title}
@@ -324,8 +324,8 @@ export default function SleekChat({
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={m.avatarUrl} alt="" className="w-6 h-6 rounded-md object-cover" />
                           <div>
-                            <p className="font-bold text-neutral-900 dark:text-neutral-200">{m.name}</p>
-                            <p className="text-[9px] text-neutral-500">{m.role} · {m.cityName}</p>
+                            <p className="font-bold text-neutral-900 dark:text-neutral-200">{localizeName(m.name, lang)}</p>
+                            <p className="text-[9px] text-neutral-500">{localizeRole(m.role, lang)} · {localizeCity(m.cityName, lang)}</p>
                           </div>
                         </div>
                         {m.instagram && (
@@ -357,7 +357,7 @@ export default function SleekChat({
         {isSimulating && (
           <div className="flex flex-col items-start gap-1">
             <span className="text-[9px] font-mono text-amber-600 dark:text-amber-500 animate-pulse font-bold tracking-wider uppercase">
-              ⚡ {t.chatThinking}
+              {t.chatThinking}
             </span>
             <div className="rounded-2xl p-4 bg-neutral-100 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 flex items-center gap-3">
               <span className="relative flex h-3.5 w-3.5">
@@ -440,7 +440,7 @@ export default function SleekChat({
             </span>
             <span>{isSimulating ? t.chatThinking : t.chatOk}</span>
           </div>
-          <span>Gemini agent · RU / KZ / EN</span>
+          <span>Gemini agent · KZ / EN / RU</span>
         </div>
       </div>
     </div>

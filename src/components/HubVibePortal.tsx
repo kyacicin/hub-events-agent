@@ -81,7 +81,7 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
 
   const handleShowDirections = useCallback((event: UiEvent) => {
     setDirectionsEvent(event);
-    pushToast(`📍 ${t.plottingRoute} ${event.locationName.split(',')[0]}...`);
+    pushToast(`${t.plottingRoute} ${event.locationName.split(',')[0]}...`);
   }, [pushToast, t.plottingRoute]);
 
   const regionEvents = events.filter(e => e.hub === activeRegion);
@@ -172,6 +172,7 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
                     members={members}
                     activeRegion={activeRegion}
                     onSaveToast={pushToast}
+                    lang={lang}
                     t={t}
                   />
                 )}

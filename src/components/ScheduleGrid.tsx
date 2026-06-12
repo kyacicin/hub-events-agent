@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, MapPin, Sparkles, Filter, ExternalLink } from 'lucide-react';
+import { Clock, MapPin, Sparkles, Filter, ExternalLink, ChevronDown } from 'lucide-react';
 import { getSchedule, hasMapRoute } from '../data';
 import { HubOption, HubRegion, TimeSlot, UiEvent, Weekday } from '../types';
-import { Lang, formatDay } from '../i18n';
+import { Lang, formatDay, localizeCity } from '../i18n';
 
 interface ScheduleGridProps {
   events: UiEvent[];
@@ -49,24 +49,24 @@ export default function ScheduleGrid({ events, hubs, initialRegion, onShowDirect
           </span>
         </div>
 
-        {/* City Switcher Pill bar (Tennis inspired) */}
-        <div className="flex flex-wrap gap-1.5 bg-neutral-100 dark:bg-neutral-950/80 p-1.5 rounded-2xl border border-neutral-200 dark:border-neutral-800">
-          {hubs.map((hub) => (
-            <button
-              key={hub.region}
-              onClick={() => {
-                setSelectedRegion(hub.region);
-                setActivePreview(null);
-              }}
-              className={`px-3 py-1 text-xs font-medium rounded-xl transition-all duration-300 ${
-                selectedRegion === hub.region
-                  ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-black/5 dark:hover:bg-white/5'
-              }`}
-            >
-              {hub.label}
-            </button>
-          ))}
+        {/* City switcher: all 19 hubs in a dropdown */}
+        <div className="relative">
+          <select
+            value={selectedRegion}
+            onChange={(e) => {
+              setSelectedRegion(e.target.value);
+              setActivePreview(null);
+            }}
+            className="w-full appearance-none pl-3 pr-8 py-2 text-xs font-medium rounded-2xl bg-neutral-100 dark:bg-neutral-950/80 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 cursor-pointer focus:outline-none focus:border-blue-500/50"
+            aria-label={t.activeHub}
+          >
+            {hubs.map((hub) => (
+              <option key={hub.region} value={hub.region}>
+                {hub.label} · {localizeCity(hub.cityName, lang)}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
         </div>
       </div>
 
@@ -135,7 +135,7 @@ export default function ScheduleGrid({ events, hubs, initialRegion, onShowDirect
             <div className="flex justify-between items-start">
               <div>
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-[9px] text-emerald-600 dark:text-emerald-400 tracking-wider font-mono font-semibold uppercase mb-1">
-                  ⭐ {t.activeBooking}
+                  {t.activeBooking}
                 </span>
                 <h4 className="text-sm font-sans font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
                   {activePreview.event.title}
