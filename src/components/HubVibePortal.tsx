@@ -172,6 +172,7 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
                     members={members}
                     activeRegion={activeRegion}
                     onSaveToast={pushToast}
+                    lang={lang}
                     t={t}
                   />
                 )}

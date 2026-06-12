@@ -78,6 +78,7 @@ const ru: Dict = {
   switchedHub: 'Активный хаб:',
   openedTeamDeck: 'Открыт Team Deck!',
   agentRequestError: '⚠️ Ошибка запроса к агенту',
+  bioSource: 'Данные собраны из Instagram хаба.',
   mon: 'Понедельник', tue: 'Вторник', wed: 'Среда', thu: 'Четверг',
   fri: 'Пятница', sat: 'Суббота', sun: 'Воскресенье',
 };
@@ -148,6 +149,7 @@ const kk: Dict = {
   switchedHub: 'Белсенді хаб:',
   openedTeamDeck: 'Team Deck ашылды!',
   agentRequestError: '⚠️ Агентке сұраныс қатесі',
+  bioSource: 'Деректер хабтың Instagram-ынан жиналған.',
   mon: 'Дүйсенбі', tue: 'Сейсенбі', wed: 'Сәрсенбі', thu: 'Бейсенбі',
   fri: 'Жұма', sat: 'Сенбі', sun: 'Жексенбі',
 };
@@ -218,6 +220,7 @@ const en: Dict = {
   switchedHub: 'Active hub:',
   openedTeamDeck: 'Team Deck opened!',
   agentRequestError: '⚠️ Agent request error',
+  bioSource: "Data collected from the hub's Instagram.",
   mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
   fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
 };
@@ -238,4 +241,64 @@ export function formatDay(isoDate: string, lang: Lang): string {
     month: 'long',
     timeZone: 'UTC',
   }).format(new Date(`${isoDate}T00:00:00Z`));
+}
+
+// ---------------------------------------------------------------------------
+// Data-driven strings: the parsed dataset stores cities, roles and template
+// names in Russian; these helpers localize them for the KZ/EN interface.
+// ---------------------------------------------------------------------------
+
+const CITY_I18N: Record<string, { kk: string; en: string }> = {
+  'Астана': { kk: 'Астана', en: 'Astana' },
+  'Алматы': { kk: 'Алматы', en: 'Almaty' },
+  'Тараз': { kk: 'Тараз', en: 'Taraz' },
+  'Павлодар': { kk: 'Павлодар', en: 'Pavlodar' },
+  'Жезказган': { kk: 'Жезқазған', en: 'Zhezkazgan' },
+  'Кызылорда': { kk: 'Қызылорда', en: 'Kyzylorda' },
+  'Туркестан': { kk: 'Түркістан', en: 'Turkistan' },
+  'Уральск': { kk: 'Орал', en: 'Uralsk' },
+  'Оскемен': { kk: 'Өскемен', en: 'Oskemen' },
+  'Актобе': { kk: 'Ақтөбе', en: 'Aktobe' },
+  'Актау': { kk: 'Ақтау', en: 'Aktau' },
+  'Атырау': { kk: 'Атырау', en: 'Atyrau' },
+  'Костанай': { kk: 'Қостанай', en: 'Kostanay' },
+  'Кокшетау': { kk: 'Көкшетау', en: 'Kokshetau' },
+  'Петропавловск': { kk: 'Петропавл', en: 'Petropavlovsk' },
+  'Шымкент': { kk: 'Шымкент', en: 'Shymkent' },
+  'Талдыкорган': { kk: 'Талдықорған', en: 'Taldykorgan' },
+  'Семей': { kk: 'Семей', en: 'Semey' },
+  'Алатау': { kk: 'Алатау', en: 'Alatau' },
+};
+
+export function localizeCity(city: string, lang: Lang): string {
+  if (lang === 'ru') return city;
+  return CITY_I18N[city]?.[lang] ?? city;
+}
+
+const ROLE_I18N: Record<string, { kk: string; en: string }> = {
+  'Официальный аккаунт хаба': { kk: 'Хабтың ресми аккаунты', en: 'Official hub account' },
+  'Директор': { kk: 'Директор', en: 'Director' },
+  'Региональный менеджер': { kk: 'Аймақтық менеджер', en: 'Regional manager' },
+  'Команда хаба': { kk: 'Хаб командасы', en: 'Hub team' },
+};
+
+export function localizeRole(role: string, lang: Lang): string {
+  if (lang === 'ru') return role;
+  return ROLE_I18N[role]?.[lang] ?? role;
+}
+
+/** Template names like "Команда Astana Hub" -> "Astana Hub командасы" / "Astana Hub team". */
+export function localizeName(name: string, lang: Lang): string {
+  const match = name.match(/^Команда\s+(.+)$/);
+  if (!match) return name;
+  if (lang === 'kk') return `${match[1]} командасы`;
+  if (lang === 'en') return `${match[1]} team`;
+  return name;
+}
+
+/** Localizes the ", Казахстан" country suffix in generated hub addresses. */
+export function localizeAddress(address: string, lang: Lang): string {
+  if (lang === 'kk') return address.replace(/, Казахстан$/, ', Қазақстан');
+  if (lang === 'en') return address.replace(/, Казахстан$/, ', Kazakhstan');
+  return address;
 }

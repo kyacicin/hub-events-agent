@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, MapPin, Paperclip, Clipboard, Code, Clock, Calendar, ExternalLink } from 'lucide-react';
 import { HUB_LOCATIONS, hasMapRoute, isStaffQuery, toUiEvent, toUiMember } from '../data';
 import { ChatMessage, HubOption, HubRegion, UiEvent, UiEventFormat } from '../types';
-import { Lang, formatDay } from '../i18n';
+import { Lang, formatDay, localizeCity, localizeName, localizeRole } from '../i18n';
 import type { HubEvent, HubStaff } from '@/lib/schemas';
 import MiniMap from './MiniMap';
 
@@ -238,7 +238,7 @@ export default function SleekChat({
                         <div className="flex items-center gap-1.5 text-[9px] font-mono font-bold tracking-wider">
                           <span className={`w-1.5 h-1.5 rounded-full ${FORMAT_DOT[event.format]}`} />
                           <span className="text-neutral-500 dark:text-neutral-400">{event.format}</span>
-                          <span className="ml-auto text-emerald-600 dark:text-emerald-500 uppercase">{event.cityName}</span>
+                          <span className="ml-auto text-emerald-600 dark:text-emerald-500 uppercase">{localizeCity(event.cityName, lang)}</span>
                         </div>
                         <h5 className="text-xs font-sans font-bold leading-tight text-neutral-900 dark:text-neutral-100 line-clamp-2">
                           {event.title}
@@ -324,8 +324,8 @@ export default function SleekChat({
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={m.avatarUrl} alt="" className="w-6 h-6 rounded-md object-cover" />
                           <div>
-                            <p className="font-bold text-neutral-900 dark:text-neutral-200">{m.name}</p>
-                            <p className="text-[9px] text-neutral-500">{m.role} · {m.cityName}</p>
+                            <p className="font-bold text-neutral-900 dark:text-neutral-200">{localizeName(m.name, lang)}</p>
+                            <p className="text-[9px] text-neutral-500">{localizeRole(m.role, lang)} · {localizeCity(m.cityName, lang)}</p>
                           </div>
                         </div>
                         {m.instagram && (

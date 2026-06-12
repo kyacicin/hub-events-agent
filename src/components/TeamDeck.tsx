@@ -6,15 +6,17 @@ import { Users, ChevronDown, Eye, EyeOff, Send, BadgeCheck, MapPin, Mail } from 
 import InstagramIcon from './InstagramIcon';
 import { HUB_LOCATIONS } from '../data';
 import { HubRegion, UiMember } from '../types';
+import { Lang, localizeAddress, localizeCity, localizeName, localizeRole } from '../i18n';
 
 interface TeamDeckProps {
   members: UiMember[];
   activeRegion: HubRegion;
   onSaveToast?: (message: string) => void;
+  lang: Lang;
   t: Record<string, string>;
 }
 
-export default function TeamDeck({ members, activeRegion, onSaveToast, t }: TeamDeckProps) {
+export default function TeamDeck({ members, activeRegion, onSaveToast, lang, t }: TeamDeckProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revealedIds, setRevealedIds] = useState<string[]>([]);
 
@@ -73,6 +75,9 @@ export default function TeamDeck({ members, activeRegion, onSaveToast, t }: Team
           const isActiveHub = member.hub === activeRegion;
           const hubLocation = HUB_LOCATIONS[member.hub];
           const channels = [member.telegram, member.instagram, member.contact].filter(Boolean);
+          const displayName = localizeName(member.name, lang);
+          const displayRole = localizeRole(member.role, lang);
+          const displayCity = localizeCity(member.cityName, lang);
 
           return (
             <div
@@ -105,10 +110,10 @@ export default function TeamDeck({ members, activeRegion, onSaveToast, t }: Team
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-sans font-bold text-neutral-900 dark:text-neutral-100 truncate">{member.name}</p>
+                      <p className="text-sm font-sans font-bold text-neutral-900 dark:text-neutral-100 truncate">{displayName}</p>
                       <BadgeCheck className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
                     </div>
-                    <p className="text-[11px] font-mono text-neutral-500 truncate">{member.role} · {member.cityName}</p>
+                    <p className="text-[11px] font-mono text-neutral-500 truncate">{displayRole} · {displayCity}</p>
                   </div>
 
                   <ChevronDown
@@ -131,12 +136,12 @@ export default function TeamDeck({ members, activeRegion, onSaveToast, t }: Team
                       <div className="px-3 pb-3 pt-1 border-t border-neutral-100 dark:border-neutral-900">
                         {/* Dossier */}
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed font-sans mt-2">
-                          {member.bio}
+                          {displayRole} — {member.hubName}, {displayCity}. {t.bioSource}
                         </p>
 
                         {/* Focus tags */}
                         <div className="flex flex-wrap gap-1.5 mt-3">
-                          {member.focus.map((tag) => (
+                          {[member.hubName, displayCity].map((tag) => (
                             <span
                               key={tag}
                               className="px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40"
@@ -150,13 +155,13 @@ export default function TeamDeck({ members, activeRegion, onSaveToast, t }: Team
                         {hubLocation && (
                           <div className="flex items-center gap-1.5 mt-3 text-[10px] font-mono text-neutral-500">
                             <MapPin className="w-3 text-emerald-500 dark:text-emerald-400" />
-                            <span>{hubLocation.name} — {hubLocation.fullAddress}</span>
+                            <span>{hubLocation.name} — {localizeAddress(hubLocation.fullAddress, lang)}</span>
                           </div>
                         )}
 
                         {/* Contact Reveal */}
                         <button
-                          onClick={() => toggleReveal(member.id, member.name)}
+                          onClick={() => toggleReveal(member.id, displayName)}
                           className={`mt-3 w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-sans font-medium rounded-xl transition-all cursor-pointer ${
                             isRevealed
                               ? 'bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'

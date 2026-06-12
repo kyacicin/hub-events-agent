@@ -5,7 +5,7 @@ import { Heart, ChevronRight, ChevronLeft, Calendar, Clock, MapPin, CheckCircle 
 import InstagramIcon from './InstagramIcon';
 import { hasMapRoute } from '../data';
 import { UiEvent, UiEventFormat } from '../types';
-import { Lang, formatDay } from '../i18n';
+import { Lang, formatDay, localizeCity } from '../i18n';
 
 interface EventCarouselProps {
   events: UiEvent[];
@@ -194,7 +194,7 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast, l
                           <span>{event.time || '—'}</span>
                         </span>
                         <span className="text-emerald-600 dark:text-emerald-500 text-[10px] bg-emerald-100 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 px-1 rounded uppercase">
-                          {event.cityName}
+                          {localizeCity(event.cityName, lang)}
                         </span>
                       </div>
 
