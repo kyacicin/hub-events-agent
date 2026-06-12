@@ -2,17 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CalendarRange, LayoutGrid, Users, X } from 'lucide-react';
+import { LayoutGrid, Users, X } from 'lucide-react';
 import { HubOption, HubRegion, UiEvent, UiMember } from '../types';
 import { Lang, getDict } from '../i18n';
 import GlassmorphicHeader from './GlassmorphicHeader';
 import SleekChat from './SleekChat';
 import EventCarousel from './EventCarousel';
 import TeamDeck from './TeamDeck';
-import ScheduleGrid from './ScheduleGrid';
 import MiniMap from './MiniMap';
 
-type AuxView = 'events' | 'team' | 'schedule';
+type AuxView = 'events' | 'team';
 type Theme = 'dark' | 'light';
 
 interface Toast {
@@ -89,7 +88,6 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
   const AUX_TABS: Array<{ key: AuxView; label: string; icon: typeof LayoutGrid }> = [
     { key: 'events', label: t.tabEvents, icon: LayoutGrid },
     { key: 'team', label: t.tabTeam, icon: Users },
-    { key: 'schedule', label: t.tabSchedule, icon: CalendarRange },
   ];
 
   return (
@@ -172,18 +170,6 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
                     members={members}
                     activeRegion={activeRegion}
                     onSaveToast={pushToast}
-                    lang={lang}
-                    t={t}
-                  />
-                )}
-                {auxView === 'schedule' && (
-                  <ScheduleGrid
-                    // Remount on region change so the grid filter follows the header pills
-                    key={activeRegion}
-                    events={events}
-                    hubs={hubs}
-                    initialRegion={activeRegion}
-                    onShowDirections={handleShowDirections}
                     lang={lang}
                     t={t}
                   />

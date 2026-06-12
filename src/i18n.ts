@@ -17,7 +17,6 @@ const ru: Dict = {
   activeHub: 'Активный хаб',
   tabEvents: 'События',
   tabTeam: 'Команда',
-  tabSchedule: 'Расписание',
   chatIntro1:
     'Сәлем! Я AI-ассистент региональных хабов Astana Hub. Напишите свой город — найду предстоящие события, форматы, адреса и контакты команды.',
   chatIntro2:
@@ -88,7 +87,6 @@ const kk: Dict = {
   activeHub: 'Белсенді хаб',
   tabEvents: 'Іс-шаралар',
   tabTeam: 'Команда',
-  tabSchedule: 'Кесте',
   chatIntro1:
     'Сәлем! Мен Astana Hub аймақтық хабтарының AI-ассистентімін. Қалаңызды жазыңыз — алдағы іс-шараларды, форматтарды, мекенжайлар мен команда контактілерін табамын.',
   chatIntro2:
@@ -159,7 +157,6 @@ const en: Dict = {
   activeHub: 'Active hub',
   tabEvents: 'Events',
   tabTeam: 'Team',
-  tabSchedule: 'Schedule',
   chatIntro1:
     "Hi! I'm the AI assistant of Astana Hub regional hubs. Tell me your city — I'll find upcoming events, formats, addresses and team contacts.",
   chatIntro2:

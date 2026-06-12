@@ -13,7 +13,7 @@ interface SleekChatProps {
   activeRegion: HubRegion;
   onRegionChanged: (region: HubRegion) => void;
   onSaveToast: (message: string) => void;
-  onSetAuxView: (view: 'events' | 'team' | 'schedule') => void;
+  onSetAuxView: (view: 'events' | 'team') => void;
   onShowDirections: (event: UiEvent) => void;
   isSimulating: boolean;
   setIsSimulating: (sim: boolean) => void;
