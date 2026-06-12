@@ -50,9 +50,6 @@ export default function TeamDeck({ members, activeRegion, onSaveToast, lang, t }
 
   return (
     <div id="team-deck-component" className="w-full bg-white/70 dark:bg-neutral-900/40 p-4 sm:p-5 rounded-3xl border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl relative select-none transition-colors duration-300">
-      {/* Background Decorative Element */}
-      <div className="absolute top-0 left-0 w-24 h-24 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -62,7 +59,6 @@ export default function TeamDeck({ members, activeRegion, onSaveToast, lang, t }
           </h3>
         </div>
         <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           {t.directorySynced}
         </span>
       </div>
@@ -96,16 +92,13 @@ export default function TeamDeck({ members, activeRegion, onSaveToast, lang, t }
                   onClick={() => toggleExpand(member.id)}
                   className="w-full flex items-center gap-3 p-3 text-left hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer focus:outline-none"
                 >
-                  <div className="relative shrink-0">
+                  <div className="shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={member.avatarUrl}
                       alt={member.name}
                       className="w-10 h-10 rounded-xl object-cover bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
                     />
-                    {isActiveHub && (
-                      <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white dark:border-neutral-950" />
-                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">

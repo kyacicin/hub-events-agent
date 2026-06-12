@@ -31,9 +31,6 @@ export default function ScheduleGrid({ events, hubs, initialRegion, onShowDirect
 
   return (
     <div id="schedule-grid-component" className="w-full bg-white/70 dark:bg-neutral-900/40 p-4 sm:p-5 rounded-3xl border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl relative select-none transition-colors duration-300">
-      {/* Background Decorative Element */}
-      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
-
       {/* Header and City Pill Switcher */}
       <div className="flex flex-col gap-3 mb-6">
         <div className="flex items-center justify-between">
@@ -44,7 +41,6 @@ export default function ScheduleGrid({ events, hubs, initialRegion, onShowDirect
             </h3>
           </div>
           <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             {t.liveCalendar}
           </span>
         </div>
@@ -109,11 +105,6 @@ export default function ScheduleGrid({ events, hubs, initialRegion, onShowDirect
                       } ${isCurPreview ? 'ring-2 ring-emerald-400 scale-[1.02] border-emerald-400' : ''}`}
                     >
                       <span>{slot.time}</span>
-
-                      {/* Interactive block dot */}
-                      {isScheduled && (
-                        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      )}
                     </button>
                   );
                 })}

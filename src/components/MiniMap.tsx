@@ -38,14 +38,10 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
       {/* Grid Pattern Background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
 
-      {/* Decorative Rings overlay */}
-      <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-
       {/* Map Header */}
       <div className="flex items-start justify-between relative mb-3 gap-3">
         <div className="min-w-0">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono tracking-wider font-semibold text-emerald-400 bg-emerald-950/40 border border-emerald-900/60 uppercase">
-            <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono tracking-wider font-semibold text-emerald-400 bg-emerald-950/40 border border-emerald-900/60 uppercase">
             {t.routePlanner}
           </span>
           <h4 className="text-sm font-sans font-medium text-neutral-900 dark:text-neutral-100 mt-1 truncate">{eventName}</h4>
@@ -123,19 +119,6 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
 
             return (
               <g key={node.region}>
-                {/* Pulse ring for target or HQ */}
-                {(isTarget || isHQ) && (
-                  <circle
-                    cx={node.x}
-                    cy={node.y}
-                    r={isTarget ? 15 : 11}
-                    className={`fill-none ${isTarget ? 'stroke-emerald-400' : 'stroke-blue-400'} opacity-35`}
-                  >
-                    <animate attributeName="r" values="3;18;3" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite" />
-                  </circle>
-                )}
-
                 {/* Base node circle */}
                 <circle
                   cx={node.x}

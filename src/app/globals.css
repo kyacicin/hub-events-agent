@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 /* Class-based dark mode: the portal toggles a `.dark` wrapper at runtime. */
 @custom-variant dark {
@@ -16,7 +17,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: Inter, "SF Pro Text", "Segoe UI", Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-mono: Inter, "SF Pro Text", "Segoe UI", Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,4 +31,58 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Inter, "SF Pro Text", "Segoe UI", Arial, sans-serif;
+}
+
+[data-spotlight-card] {
+  --spotlight-rgb: 16 185 129;
+  --spotlight-x: 50%;
+  --spotlight-y: 50%;
+  --spotlight-border-color: rgb(115 115 115 / 0.22);
+  isolation: isolate;
+  position: relative;
+  border-color: var(--spotlight-border-color) !important;
+}
+
+[data-spotlight-card]::before,
+[data-spotlight-card]::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  border-radius: inherit;
+}
+
+[data-spotlight-card]::before {
+  inset: -1px;
+  z-index: 2;
+  padding: 1px;
+  background:
+    radial-gradient(
+      220px circle at var(--spotlight-x) var(--spotlight-y),
+      rgb(var(--spotlight-rgb) / 0.95),
+      rgb(var(--spotlight-rgb) / 0.28) 42%,
+      transparent 70%
+    );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+[data-spotlight-card]::after {
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(
+      260px circle at var(--spotlight-x) var(--spotlight-y),
+      rgb(var(--spotlight-rgb) / 0.09),
+      transparent 62%
+    );
+}
+
+.dark [data-spotlight-card] {
+  --spotlight-border-color: rgb(255 255 255 / 0.15);
 }

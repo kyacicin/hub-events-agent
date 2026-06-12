@@ -20,10 +20,105 @@ import {
 // Hub directory
 // ---------------------------------------------------------------------------
 
-const HUB_ADDRESS_OVERRIDES: Record<string, string> = {
-  astana: 'пр. Мангилик Ел 55/8, павильон C1 EXPO, Астана',
-  zhambyl: 'пр. Толе би 35, Тараз',
-  pavlodar: 'ул. Генерала Дюсенова 80, 2 этаж, Павлодар',
+const HUB_GEO_OVERRIDES: Record<
+  string,
+  Pick<HubLocation, 'fullAddress' | 'coordinates' | 'addressPrecision'>
+> = {
+  turkistan: {
+    fullAddress: 'ул. Бекзат Саттарханова 36, Туркестан',
+    coordinates: { lat: 43.3021, lng: 68.2699 },
+    addressPrecision: 'exact',
+  },
+  west_kazakhstan: {
+    fullAddress: 'ул. Исатая-Махамбета 84, ЦОН, 4 этаж, Уральск',
+    coordinates: { lat: 51.2259, lng: 51.3876 },
+    addressPrecision: 'exact',
+  },
+  astana: {
+    fullAddress: 'пр. Мангилик Ел 55/8, павильон C1 EXPO, Астана',
+    coordinates: { lat: 51.0902, lng: 71.4167 },
+    addressPrecision: 'exact',
+  },
+  almaty: {
+    fullAddress: 'ул. Зенкова 24, 4 этаж, Алматы',
+    coordinates: { lat: 43.257, lng: 76.9563 },
+    addressPrecision: 'exact',
+  },
+  zhambyl: {
+    fullAddress: 'пр. Толе би 35, Тараз',
+    coordinates: { lat: 42.9007, lng: 71.3677 },
+    addressPrecision: 'exact',
+  },
+  alatau: {
+    fullAddress: 'ул. Кунаева 5Б, Конаев',
+    coordinates: { lat: 43.8827, lng: 77.0637 },
+    addressPrecision: 'exact',
+  },
+  atyrau: {
+    fullAddress: 'Atyrau Hub, Атырау, Казахстан',
+    coordinates: { lat: 47.0945, lng: 51.9238 },
+    addressPrecision: 'city',
+  },
+  shymkent: {
+    fullAddress: 'мкр. Север 66/2, Шымкент',
+    coordinates: { lat: 42.3592, lng: 69.6039 },
+    addressPrecision: 'exact',
+  },
+  kostanay: {
+    fullAddress: 'ул. Абая 28/1, Костанай',
+    coordinates: { lat: 53.2144, lng: 63.6246 },
+    addressPrecision: 'exact',
+  },
+  pavlodar: {
+    fullAddress: 'ул. Генерала Дюсенова 80, 2 этаж, Павлодар',
+    coordinates: { lat: 52.2869, lng: 76.9674 },
+    addressPrecision: 'exact',
+  },
+  east_kazakhstan: {
+    fullAddress: 'ул. Казахстан 59/1, Оскемен',
+    coordinates: { lat: 49.9516, lng: 82.6119 },
+    addressPrecision: 'exact',
+  },
+  aktobe: {
+    fullAddress: 'пр. Абилкайыр-хана 52А, 3 этаж, Актобе',
+    coordinates: { lat: 50.2839, lng: 57.1668 },
+    addressPrecision: 'exact',
+  },
+  aqmola: {
+    fullAddress: 'ул. Гагарина 7, Кокшетау',
+    coordinates: { lat: 53.2838, lng: 69.3974 },
+    addressPrecision: 'exact',
+  },
+  mangystau: {
+    fullAddress: 'Mangystau Hub, Актау, Казахстан',
+    coordinates: { lat: 43.6411, lng: 51.1985 },
+    addressPrecision: 'city',
+  },
+  kyzylorda: {
+    fullAddress: 'ул. Айтеке би 29А, Кызылорда',
+    coordinates: { lat: 44.8488, lng: 65.4823 },
+    addressPrecision: 'exact',
+  },
+  ulytau: {
+    fullAddress: 'ул. Момышулы 3А, Жезказган',
+    coordinates: { lat: 47.8043, lng: 67.7143 },
+    addressPrecision: 'exact',
+  },
+  north_kazakhstan: {
+    fullAddress: 'SKO Hub, Петропавловск, Казахстан',
+    coordinates: { lat: 54.8732, lng: 69.1505 },
+    addressPrecision: 'city',
+  },
+  jetisu: {
+    fullAddress: 'ул. Кунаева 47, IT HUB Jetisu Digital, Талдыкорган',
+    coordinates: { lat: 45.0178, lng: 78.3797 },
+    addressPrecision: 'exact',
+  },
+  abai: {
+    fullAddress: 'Semey Hub, Семей, Казахстан',
+    coordinates: { lat: 50.4111, lng: 80.2275 },
+    addressPrecision: 'city',
+  },
 };
 
 export const HUB_LOCATIONS: Record<HubRegion, HubLocation> = Object.fromEntries(
@@ -31,8 +126,16 @@ export const HUB_LOCATIONS: Record<HubRegion, HubLocation> = Object.fromEntries(
     account.region,
     {
       name: account.region === 'astana' ? `${account.hub} (HQ)` : account.hub,
+      cityName: account.city,
+      instagram: `@${account.instagram}`,
       fullAddress:
-        HUB_ADDRESS_OVERRIDES[account.region] ?? `${account.city}, Казахстан`,
+        HUB_GEO_OVERRIDES[account.region]?.fullAddress ?? `${account.city}, Казахстан`,
+      coordinates: HUB_GEO_OVERRIDES[account.region]?.coordinates ?? {
+        lat: 48.0196,
+        lng: 66.9237,
+      },
+      addressPrecision:
+        HUB_GEO_OVERRIDES[account.region]?.addressPrecision ?? 'city',
     },
   ]),
 );
@@ -147,7 +250,7 @@ export function toUiMember(person: HubStaff): UiMember {
 
 /** RU/KZ/EN heuristic: is the user asking about people rather than events? */
 export function isStaffQuery(text: string): boolean {
-  return /(команд|сотрудник|директор|менеджер|контакт|кто |кім|қызметкер|басшы|байланыс|staff|team|director|contact)/i.test(
+  return /(команд|сотрудник|работник|директор|менеджер|руководител|организатор|ответственн|контакт|кто\s|staff|team|employee|director|manager|lead|contact|кім\s|қызметкер|басшы|жетекші|ұйымдастырушы|жауапты|байланыс)/i.test(
     text,
   );
 }

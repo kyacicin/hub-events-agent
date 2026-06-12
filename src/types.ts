@@ -67,7 +67,14 @@ export interface ChatMessage {
 
 export interface HubLocation {
   name: string;
+  cityName: string;
+  instagram: string;
   fullAddress: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  addressPrecision: 'exact' | 'city';
 }
 
 /** Selectable hub for header pills, chat dropdown and schedule switcher. */

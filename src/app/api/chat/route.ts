@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import {
   callGeminiAgent,
   fallbackAgentReply,
+  isStaffQuestion,
+  staffAgentReply,
   wantsAllRegions,
   type ChatMessage,
 } from "@/lib/agent";
@@ -36,6 +38,7 @@ export async function POST(request: Request) {
     const latestMessage = lastUserMessage(messages)?.content ?? "";
     const today = dateKey(new Date());
     const allRegions = wantsAllRegions(latestMessage);
+    const staffQuestion = isStaffQuestion(latestMessage);
     const region = allRegions ? null : detectRegion(messages);
     const city = cityForRegion(region);
     const [allEvents, allStaff] = await Promise.all([
@@ -55,31 +58,41 @@ export async function POST(request: Request) {
     let reply: string;
     let modelStatus: "ok" | "fallback" = "ok";
 
-    try {
-      reply = await callGeminiAgent({
-        messages,
-        events,
-        staff,
-        today,
-        region,
-        city,
-      });
-    } catch (error) {
-      modelStatus = "fallback";
-      reply = fallbackAgentReply({
+    if (staffQuestion) {
+      reply = staffAgentReply({
         latestMessage,
-        events,
         staff,
         region,
         city,
         allRegions,
       });
-      console.error(error instanceof Error ? error.message : String(error));
+    } else {
+      try {
+        reply = await callGeminiAgent({
+          messages,
+          events,
+          staff,
+          today,
+          region,
+          city,
+        });
+      } catch (error) {
+        modelStatus = "fallback";
+        reply = fallbackAgentReply({
+          latestMessage,
+          events,
+          staff,
+          region,
+          city,
+          allRegions,
+        });
+        console.warn(error instanceof Error ? error.message : String(error));
+      }
     }
 
     return NextResponse.json({
       reply,
-      events,
+      events: staffQuestion ? [] : events,
       staff,
       region,
       city,

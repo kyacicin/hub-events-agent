@@ -4,7 +4,7 @@ import { readEvents, readStaff } from "@/lib/dataStore";
 import { filterUpcomingEvents } from "@/lib/filter";
 
 export const metadata = {
-  title: "HubVibe Portal — события региональных хабов Astana Hub",
+  title: "Astana Hub — события региональных хабов",
   description:
     "AI-агент по событиям региональных хабов Astana Hub: карусель событий, команда хабов, расписание и чат с региональным фильтром.",
 };

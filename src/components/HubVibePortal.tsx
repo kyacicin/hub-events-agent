@@ -10,6 +10,9 @@ import SleekChat from './SleekChat';
 import EventCarousel from './EventCarousel';
 import TeamDeck from './TeamDeck';
 import MiniMap from './MiniMap';
+import KazakhstanHubMap from './KazakhstanHubMap';
+import AstanaHubFooter from './AstanaHubFooter';
+import DottedSurface from './DottedSurface';
 
 type AuxView = 'events' | 'team';
 type Theme = 'dark' | 'light';
@@ -92,29 +95,20 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
 
   return (
     <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className="min-h-screen bg-neutral-100 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans transition-colors duration-300">
-        {/* Ambient background glows */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-32 left-1/4 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl" />
-        </div>
+      <div className="relative min-h-screen bg-neutral-100 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans transition-colors duration-300">
+        <DottedSurface theme={theme} />
 
         <GlassmorphicHeader
           hubs={hubs}
           activeRegion={activeRegion}
           onRegionChange={setActiveRegion}
-          isSimulating={isSimulating}
           lang={lang}
-          onLangChange={changeLang}
-          theme={theme}
-          onThemeToggle={toggleTheme}
           t={t}
         />
 
-        {/* Chat-first layout: the dialog is the primary surface, the deck
-            panels are secondary and only share the row on wide screens. */}
-        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col xl:flex-row gap-6 items-start">
-          <div className="flex-1 min-w-0 w-full">
+        {/* Chat-first layout: chat, events, and map share equal column widths. */}
+        <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div className="min-w-0 w-full flex">
             <SleekChat
               hubs={hubs}
               activeRegion={activeRegion}
@@ -130,7 +124,7 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
           </div>
 
           {/* Secondary Deck Panel */}
-          <aside className="w-full xl:w-[380px] shrink-0 flex flex-col gap-4">
+          <aside className="w-full min-w-0 flex flex-col gap-4">
             <div className="flex gap-1.5 bg-white/70 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800/80 p-1.5 rounded-2xl self-start backdrop-blur-md">
               {AUX_TABS.map(({ key, label, icon: Icon }) => (
                 <button
@@ -157,13 +151,21 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
                 transition={{ duration: 0.25 }}
               >
                 {auxView === 'events' && (
-                  <EventCarousel
-                    events={regionEvents}
-                    onShowDirections={handleShowDirections}
-                    onSaveToast={pushToast}
-                    lang={lang}
-                    t={t}
-                  />
+                  <div className="flex flex-col gap-4">
+                    <EventCarousel
+                      events={regionEvents}
+                      onShowDirections={handleShowDirections}
+                      onSaveToast={pushToast}
+                      lang={lang}
+                      t={t}
+                    />
+                    <KazakhstanHubMap
+                      activeRegion={activeRegion}
+                      hubs={hubs}
+                      onRegionChange={setActiveRegion}
+                      t={t}
+                    />
+                  </div>
                 )}
                 {auxView === 'team' && (
                   <TeamDeck
@@ -178,6 +180,15 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
             </AnimatePresence>
           </aside>
         </main>
+
+        <div className="relative z-10">
+          <AstanaHubFooter
+            lang={lang}
+            onLangChange={changeLang}
+            theme={theme}
+            onThemeToggle={toggleTheme}
+          />
+        </div>
 
         {/* Directions Mini-Map Overlay */}
         <AnimatePresence>

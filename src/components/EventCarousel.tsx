@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Heart, ChevronRight, ChevronLeft, Calendar, Clock, MapPin, CheckCircle } from 'lucide-react';
 import InstagramIcon from './InstagramIcon';
+import { syncSpotlightPointer } from './spotlightBorder';
 import { hasMapRoute } from '../data';
 import { UiEvent, UiEventFormat } from '../types';
 import { Lang, formatDay, localizeCity } from '../i18n';
@@ -15,10 +16,10 @@ interface EventCarouselProps {
   t: Record<string, string>;
 }
 
-const FORMAT_BADGE: Record<UiEventFormat, { pill: string; dot: string }> = {
-  OFFLINE: { pill: 'bg-red-500 text-white shadow-md shadow-red-500/20', dot: 'bg-white animate-pulse' },
-  ONLINE: { pill: 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/20', dot: 'bg-neutral-950' },
-  HYBRID: { pill: 'bg-amber-500 text-neutral-950 shadow-md shadow-amber-500/20', dot: 'bg-neutral-950 animate-pulse' },
+const FORMAT_BADGE: Record<UiEventFormat, { pill: string }> = {
+  OFFLINE: { pill: 'bg-red-500 text-white shadow-md shadow-red-500/20' },
+  ONLINE: { pill: 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/20' },
+  HYBRID: { pill: 'bg-amber-500 text-neutral-950 shadow-md shadow-amber-500/20' },
 };
 
 export default function EventCarousel({ events, onShowDirections, onSaveToast, lang, t }: EventCarouselProps) {
@@ -78,7 +79,11 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast, l
 
   if (!events || events.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 bg-white/70 dark:bg-neutral-900/40 rounded-3xl border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400">
+      <div
+        data-spotlight-card
+        onPointerMove={syncSpotlightPointer}
+        className="flex flex-col items-center justify-center p-8 bg-white/70 dark:bg-neutral-900/40 rounded-3xl border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400"
+      >
         <Calendar className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mb-2" />
         <p className="text-sm font-sans">{t.noEvents}</p>
       </div>
@@ -90,7 +95,6 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast, l
       {/* Headings & Controls */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400" />
           <h3 className="text-sm font-semibold font-sans uppercase tracking-wider text-neutral-600 dark:text-neutral-300">
             {t.regionalEvents} ({events.length})
           </h3>
@@ -134,7 +138,11 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast, l
                 className="w-full shrink-0 px-0.5"
               >
                 {/* Premium Glassmorphic Card */}
-                <div className="relative group rounded-3xl bg-white/80 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700/80 backdrop-blur-xl p-4 overflow-hidden shadow-xl shadow-neutral-200/50 dark:shadow-black/20 transition-all duration-300 flex flex-col justify-between h-[390px] hover:shadow-2xl">
+                <div
+                  data-spotlight-card
+                  onPointerMove={syncSpotlightPointer}
+                  className="relative group rounded-3xl bg-white/80 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700/80 backdrop-blur-xl p-4 overflow-hidden shadow-xl shadow-neutral-200/50 dark:shadow-black/20 transition-all duration-300 flex flex-col justify-between h-[390px] hover:shadow-2xl"
+                >
                   {/* Subtle Top Glow gradient accent */}
                   <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent group-hover:via-emerald-400 transition-all duration-500" />
 
@@ -153,8 +161,7 @@ export default function EventCarousel({ events, onShowDirections, onSaveToast, l
 
                     {/* Format Badge (high contrast ONLINE / OFFLINE / HYBRID) */}
                     <div className="absolute top-2 left-2">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-mono font-bold tracking-wider ${FORMAT_BADGE[event.format].pill}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${FORMAT_BADGE[event.format].dot}`} />
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-mono font-bold tracking-wider ${FORMAT_BADGE[event.format].pill}`}>
                         {event.format}
                       </span>
                     </div>
