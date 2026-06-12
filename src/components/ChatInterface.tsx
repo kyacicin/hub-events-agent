@@ -171,7 +171,7 @@ export function ChatInterface({
         <div className="flex h-20 items-center gap-4 px-5 sm:px-8">
           <div className="flex w-[220px] shrink-0 items-center gap-3">
             <Image
-              src="/astanahub_logo.avif"
+              src="/astanahub_logo.png"
               alt="Astana Hub"
               width={48}
               height={48}

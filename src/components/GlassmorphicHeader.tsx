@@ -38,7 +38,7 @@ export default function GlassmorphicHeader({
         <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-emerald-400 p-[1px] flex items-center justify-center shadow-lg shadow-blue-500/10">
           <div className="relative w-full h-full overflow-hidden rounded-[11px] bg-white dark:bg-neutral-950">
             <Image
-              src="/astanahub_logo.avif"
+              src="/astanahub_logo.png"
               alt="Astana Hub"
               fill
               sizes="40px"
