@@ -25,6 +25,7 @@
 *.pem
 data/raw_posts.json
 data/dataset_instagram-scraper_*.json
+hub-events-agent/
 
 # debug
 npm-debug.log*
