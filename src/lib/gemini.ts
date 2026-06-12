@@ -1,5 +1,9 @@
 const GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash";
+const DEFAULT_GEMINI_FALLBACK_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+];
 
 export type GeminiMessage = {
   role: "user" | "model";
@@ -30,6 +34,16 @@ type GeminiGenerateContentResponse = {
   };
 };
 
+class GeminiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
+    super(message);
+    this.name = "GeminiRequestError";
+  }
+}
+
 export async function generateGeminiText({
   system,
   messages,
@@ -37,7 +51,60 @@ export async function generateGeminiText({
   temperature = 0.2,
 }: GenerateTextOptions) {
   const apiKey = requiredEnv("GEMINI_API_KEY");
-  const model = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL;
+  const models = geminiModelCandidates(
+    process.env.GEMINI_MODEL,
+    process.env.GEMINI_FALLBACK_MODELS,
+  );
+  const errors: string[] = [];
+
+  for (const [index, model] of models.entries()) {
+    try {
+      return await generateGeminiTextWithModel({
+        apiKey,
+        model,
+        system,
+        messages,
+        maxOutputTokens,
+        temperature,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(`${model}: ${message}`);
+
+      if (
+        index === models.length - 1 ||
+        !shouldTryNextGeminiModel(error)
+      ) {
+        throw new Error(`Gemini request failed across models. ${errors.join(" | ")}`);
+      }
+    }
+  }
+
+  throw new Error("Gemini request failed: no models configured.");
+}
+
+export function geminiModelCandidates(
+  primaryModel?: string,
+  fallbackModels?: string,
+) {
+  const fallbackList = fallbackModels
+    ? fallbackModels.split(",").map((model) => model.trim()).filter(Boolean)
+    : DEFAULT_GEMINI_FALLBACK_MODELS;
+
+  return [...new Set([
+    primaryModel?.trim() || DEFAULT_GEMINI_MODEL,
+    ...fallbackList,
+  ])];
+}
+
+async function generateGeminiTextWithModel({
+  apiKey,
+  model,
+  system,
+  messages,
+  maxOutputTokens,
+  temperature,
+}: GenerateTextOptions & { apiKey: string; model: string }) {
   const response = await fetch(
     `${GEMINI_API_BASE_URL}/models/${encodeURIComponent(model)}:generateContent`,
     {
@@ -67,10 +134,11 @@ export async function generateGeminiText({
   const data = (await response.json()) as GeminiGenerateContentResponse;
 
   if (!response.ok) {
-    throw new Error(
+    throw new GeminiRequestError(
       `Gemini request failed: ${response.status} ${
         data.error?.message ?? JSON.stringify(data)
       }`,
+      response.status,
     );
   }
 
@@ -83,7 +151,7 @@ export async function generateGeminiText({
   if (!text) {
     const blockReason = data.promptFeedback?.blockReason;
     const finishReason = data.candidates?.[0]?.finishReason;
-    throw new Error(
+    throw new GeminiRequestError(
       `Gemini returned an empty response${
         blockReason || finishReason
           ? ` (${blockReason ?? finishReason})`
@@ -93,6 +161,19 @@ export async function generateGeminiText({
   }
 
   return text;
+}
+
+function shouldTryNextGeminiModel(error: unknown) {
+  if (!(error instanceof GeminiRequestError)) {
+    return true;
+  }
+
+  return (
+    !error.status ||
+    error.status === 429 ||
+    error.status === 503 ||
+    error.status >= 500
+  );
 }
 
 function requiredEnv(name: string) {

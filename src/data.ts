@@ -125,7 +125,7 @@ export const HUB_LOCATIONS: Record<HubRegion, HubLocation> = Object.fromEntries(
   HUB_ACCOUNTS.map((account) => [
     account.region,
     {
-      name: account.region === 'astana' ? `${account.hub} (HQ)` : account.hub,
+      name: account.hub,
       cityName: account.city,
       instagram: `@${account.instagram}`,
       fullAddress:
@@ -150,7 +150,7 @@ export function hubOptionFor(region: HubRegion): HubOption | null {
   };
 }
 
-/** Every regional hub, HQ first, then alphabetically by label. */
+/** Every regional hub, Astana first, then alphabetically by label. */
 export function buildHubOptions(): HubOption[] {
   return [...HUB_ACCOUNTS]
     .map((a) => ({
@@ -299,7 +299,7 @@ export function mapNodes(): MapNode[] {
     }));
 }
 
-/** Backbone links drawn from HQ to the major regional nodes. */
+/** Backbone links drawn from Astana to the major regional nodes. */
 export const MAP_BACKBONE: HubRegion[] = [
   'pavlodar',
   'east_kazakhstan',

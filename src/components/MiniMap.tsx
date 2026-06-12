@@ -13,7 +13,7 @@ interface MiniMapProps {
   t: Record<string, string>;
 }
 
-const HQ_REGION = 'astana';
+const SOURCE_REGION = 'astana';
 
 export default function MiniMap({ targetRegion, eventName, locationName, t }: MiniMapProps) {
   // Track which region's route has finished its draw-in delay; deriving
@@ -21,7 +21,7 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
   // setting state synchronously in the effect.
   const [animatedRegion, setAnimatedRegion] = useState<string | null>(null);
   const routeAnimated = animatedRegion === targetRegion;
-  const matchedHub = HUB_LOCATIONS[targetRegion] ?? HUB_LOCATIONS[HQ_REGION];
+  const matchedHub = HUB_LOCATIONS[targetRegion] ?? HUB_LOCATIONS[SOURCE_REGION];
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimatedRegion(String(targetRegion)), 300);
@@ -29,7 +29,7 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
   }, [targetRegion]);
 
   const nodes = mapNodes();
-  const sourceCoords = REGION_COORDS[HQ_REGION];
+  const sourceCoords = REGION_COORDS[SOURCE_REGION];
   const targetCoords = REGION_COORDS[targetRegion] ?? REGION_COORDS['zhambyl'];
   const routePath = `M ${sourceCoords.x} ${sourceCoords.y} Q ${(sourceCoords.x + targetCoords.x) / 2 + 20} ${(sourceCoords.y + targetCoords.y) / 2 - 30} ${targetCoords.x} ${targetCoords.y}`;
 
@@ -50,9 +50,9 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
         <div className="text-right flex flex-col items-end shrink-0">
           <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-mono">
             <Compass className="w-3 animate-spin-slow" />
-            <span>HQ Link Active</span>
+            <span>Hub Link Active</span>
           </div>
-          <span className="text-[10px] text-neutral-500 font-mono mt-0.5">Astana HQ → {matchedHub.name}</span>
+          <span className="text-[10px] text-neutral-500 font-mono mt-0.5">Astana Hub → {matchedHub.name}</span>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
       <div className="relative w-full h-44 bg-neutral-950/90 rounded-2xl border border-neutral-800/80 overflow-hidden flex items-center justify-center">
         {/* Vector SVG Canvas */}
         <svg className="w-full h-full absolute inset-0 text-neutral-800" viewBox="0 0 500 320" xmlns="http://www.w3.org/2000/svg">
-          {/* Subtle backbone lines from HQ to major regional hubs */}
+          {/* Subtle backbone lines from Astana to major regional hubs */}
           {MAP_BACKBONE.map((region) => {
             const coords = REGION_COORDS[region];
             if (!coords) return null;
@@ -78,7 +78,7 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
             );
           })}
 
-          {/* Animated Route Line from HQ Astana to Target */}
+          {/* Animated route line from Astana to target */}
           {routeAnimated && (
             <motion.path
               d={routePath}
@@ -114,8 +114,8 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
           {/* Hub Nodes */}
           {nodes.map((node) => {
             const isTarget = node.region === targetRegion;
-            const isHQ = node.region === HQ_REGION;
-            const showLabel = isTarget || isHQ || MAP_BACKBONE.includes(node.region);
+            const isSource = node.region === SOURCE_REGION;
+            const showLabel = isTarget || isSource || MAP_BACKBONE.includes(node.region);
 
             return (
               <g key={node.region}>
@@ -123,20 +123,20 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
                 <circle
                   cx={node.x}
                   cy={node.y}
-                  r={isTarget ? 5.5 : isHQ ? 4.5 : 3}
+                  r={isTarget ? 5.5 : isSource ? 4.5 : 3}
                   className={`${
-                    isTarget ? 'fill-emerald-400' : isHQ ? 'fill-blue-400' : 'fill-neutral-700'
+                    isTarget ? 'fill-emerald-400' : isSource ? 'fill-blue-400' : 'fill-neutral-700'
                   }`}
                 />
 
-                {/* Region name annotation (target, HQ and backbone hubs only) */}
+                {/* Region name annotation (target, Astana and backbone hubs only) */}
                 {showLabel && (
                   <text
                     x={node.x}
                     y={node.y - (isTarget ? 10 : 8)}
                     textAnchor="middle"
                     className={`font-mono text-[8px] tracking-tight ${
-                      isTarget ? 'fill-emerald-400 font-bold' : isHQ ? 'fill-blue-300' : 'fill-neutral-500'
+                      isTarget ? 'fill-emerald-400 font-bold' : isSource ? 'fill-blue-300' : 'fill-neutral-500'
                     }`}
                   >
                     {node.label}
@@ -161,8 +161,8 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
       <div className="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-neutral-200 dark:border-neutral-800">
         <div className="p-2 rounded bg-neutral-100 dark:bg-neutral-950/50 border border-neutral-200 dark:border-neutral-900 text-left">
           <p className="text-[10px] font-sans text-neutral-500 uppercase tracking-wider">{t.routeStart}</p>
-          <p className="text-xs text-neutral-700 dark:text-neutral-300 font-medium truncate">{HUB_LOCATIONS[HQ_REGION].name}</p>
-          <p className="text-[9px] text-neutral-500 truncate">{HUB_LOCATIONS[HQ_REGION].fullAddress}</p>
+          <p className="text-xs text-neutral-700 dark:text-neutral-300 font-medium truncate">{HUB_LOCATIONS[SOURCE_REGION].name}</p>
+          <p className="text-[9px] text-neutral-500 truncate">{HUB_LOCATIONS[SOURCE_REGION].fullAddress}</p>
         </div>
         <div className="p-2 rounded bg-emerald-50 dark:bg-neutral-950/50 border border-emerald-200 dark:border-emerald-950/40 text-left">
           <p className="text-[10px] font-sans text-emerald-600 dark:text-emerald-500 uppercase tracking-wider">{t.routeDest}</p>

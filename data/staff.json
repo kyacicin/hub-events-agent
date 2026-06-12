@@ -1,25 +1,80 @@
 [
   {
-    "id": "staff_zhambyl_aziz_seytkali",
-    "hub": "Zhambyl Hub",
-    "city": "Тараз",
-    "region": "zhambyl",
-    "name": "Азиз Сейткали",
-    "role": "Директор",
-    "instagram": "@aziz_hub",
+    "id": "staff_astana_magzhan_madiyev",
+    "hub": "Astana Hub",
+    "city": "Астана",
+    "region": "astana",
+    "name": "Магжан Мадиев",
+    "role": "Генеральный директор",
+    "instagram": null,
     "contact": null,
-    "source": "instagram_highlights_demo"
+    "source": "instagram_post:https://www.instagram.com/p/DZSf1iMsnc_/"
   },
   {
-    "id": "staff_zhambyl_maria_alibekova",
-    "hub": "Zhambyl Hub",
-    "city": "Тараз",
-    "region": "zhambyl",
-    "name": "Мария Алибекова",
-    "role": "Региональный менеджер",
+    "id": "staff_astana_nazgul_baitemirova",
+    "hub": "Astana Hub",
+    "city": "Астана",
+    "region": "astana",
+    "name": "Назгуль Байтемирова",
+    "role": "Управляющий директор",
     "instagram": null,
-    "contact": "maria@astanahub.com",
-    "source": "instagram_post_demo"
+    "contact": null,
+    "source": "instagram_post:https://www.instagram.com/p/DZUIzy-IjqO/"
+  },
+  {
+    "id": "staff_astana_dian_aibashpanov",
+    "hub": "Astana Hub",
+    "city": "Астана",
+    "region": "astana",
+    "name": "Диан Айбашпанов",
+    "role": "Директор офиса регионального развития",
+    "instagram": null,
+    "contact": null,
+    "source": "instagram_post:https://www.instagram.com/p/DYW5EEutt0Y/"
+  },
+  {
+    "id": "staff_qostanai_damir_mnaidarov",
+    "hub": "Qostanai Hub",
+    "city": "Костанай",
+    "region": "kostanay",
+    "name": "Дамир Мнайдаров",
+    "role": "Директор",
+    "instagram": null,
+    "contact": null,
+    "source": "instagram_post:https://www.instagram.com/p/DYkYhQMtOjQ/"
+  },
+  {
+    "id": "staff_shymkent_kurmangazy_muratov",
+    "hub": "Shymkent Hub",
+    "city": "Шымкент",
+    "region": "shymkent",
+    "name": "Құрманғазы Мұратов",
+    "role": "Аймақтық менеджер, программист",
+    "instagram": null,
+    "contact": null,
+    "source": "instagram_post:https://www.instagram.com/p/DYy4AryjJzS/"
+  },
+  {
+    "id": "staff_turkistan_hub_contact",
+    "hub": "Turkistan Hub",
+    "city": "Туркестан",
+    "region": "turkistan",
+    "name": "Команда Turkistan Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@turkistan.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_batys_hub_contact",
+    "hub": "Batys Hub",
+    "city": "Уральск",
+    "region": "west_kazakhstan",
+    "name": "Команда Batys Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@batys.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
   },
   {
     "id": "staff_astana_hub_contact",
@@ -30,40 +85,7 @@
     "role": "Официальный аккаунт хаба",
     "instagram": "@astana.hub",
     "contact": null,
-    "source": "instagram_profile_demo"
-  },
-  {
-    "id": "staff_zhambyl_hub_contact",
-    "hub": "Zhambyl Hub",
-    "city": "Тараз",
-    "region": "zhambyl",
-    "name": "Команда Zhambyl Hub",
-    "role": "Официальный аккаунт хаба",
-    "instagram": "@zhambyl_hub",
-    "contact": null,
-    "source": "instagram_profile_demo"
-  },
-  {
-    "id": "staff_pavlodar_hub_contact",
-    "hub": "Pavlodar Hub",
-    "city": "Павлодар",
-    "region": "pavlodar",
-    "name": "Команда Pavlodar Hub",
-    "role": "Официальный аккаунт хаба",
-    "instagram": "@pavlodar.hub",
-    "contact": null,
-    "source": "instagram_profile_demo"
-  },
-  {
-    "id": "staff_ulytau_hub_contact",
-    "hub": "Ulytau Hub",
-    "city": "Жезказган",
-    "region": "ulytau",
-    "name": "Команда Ulytau Hub",
-    "role": "Официальный аккаунт хаба",
-    "instagram": "@ulytau.hub",
-    "contact": null,
-    "source": "instagram_profile_demo"
+    "source": "instagram_profile_manual"
   },
   {
     "id": "staff_almaty_hub_contact",
@@ -74,6 +96,171 @@
     "role": "Официальный аккаунт хаба",
     "instagram": "@almaty_hub",
     "contact": null,
-    "source": "instagram_profile_demo"
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_zhambyl_hub_contact",
+    "hub": "Zhambyl Hub",
+    "city": "Тараз",
+    "region": "zhambyl",
+    "name": "Команда Zhambyl Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@zhambyl_hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_alatau_hub_contact",
+    "hub": "Alatau Hub",
+    "city": "Алатау",
+    "region": "alatau",
+    "name": "Команда Alatau Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@alatau.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_atyrau_hub_contact",
+    "hub": "Atyrau Hub",
+    "city": "Атырау",
+    "region": "atyrau",
+    "name": "Команда Atyrau Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@atyrau_it_hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_shymkent_hub_contact",
+    "hub": "Shymkent Hub",
+    "city": "Шымкент",
+    "region": "shymkent",
+    "name": "Команда Shymkent Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@shymkent__hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_qostanai_hub_contact",
+    "hub": "Qostanai Hub",
+    "city": "Костанай",
+    "region": "kostanay",
+    "name": "Команда Qostanai Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@qostanai.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_pavlodar_hub_contact",
+    "hub": "Pavlodar Hub",
+    "city": "Павлодар",
+    "region": "pavlodar",
+    "name": "Команда Pavlodar Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@pavlodar.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_oskemen_hub_contact",
+    "hub": "Oskemen Hub",
+    "city": "Оскемен",
+    "region": "east_kazakhstan",
+    "name": "Команда Oskemen Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@oskemen.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_aqtobe_hub_contact",
+    "hub": "Aqtobe Hub",
+    "city": "Актобе",
+    "region": "aktobe",
+    "name": "Команда Aqtobe Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@aqtobe.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_aqmola_hub_contact",
+    "hub": "Aqmola Hub",
+    "city": "Кокшетау",
+    "region": "aqmola",
+    "name": "Команда Aqmola Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@aqmola.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_mangystau_hub_contact",
+    "hub": "Mangystau Hub",
+    "city": "Актау",
+    "region": "mangystau",
+    "name": "Команда Mangystau Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@mangystau.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_kyzylorda_hub_contact",
+    "hub": "Kyzylorda Hub",
+    "city": "Кызылорда",
+    "region": "kyzylorda",
+    "name": "Команда Kyzylorda Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@kyzylordahub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_ulytau_hub_contact",
+    "hub": "Ulytau Hub",
+    "city": "Жезказган",
+    "region": "ulytau",
+    "name": "Команда Ulytau Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@ulytau.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_sko_hub_contact",
+    "hub": "SKO Hub",
+    "city": "Петропавловск",
+    "region": "north_kazakhstan",
+    "name": "Команда SKO Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@sko_hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_jetisu_digital_contact",
+    "hub": "Jetisu Digital",
+    "city": "Талдыкорган",
+    "region": "jetisu",
+    "name": "Команда Jetisu Digital",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@jetisu_digital",
+    "contact": null,
+    "source": "instagram_profile_manual"
+  },
+  {
+    "id": "staff_semey_hub_contact",
+    "hub": "Semey Hub",
+    "city": "Семей",
+    "region": "abai",
+    "name": "Команда Semey Hub",
+    "role": "Официальный аккаунт хаба",
+    "instagram": "@semey.hub",
+    "contact": null,
+    "source": "instagram_profile_manual"
   }
 ]

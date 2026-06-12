@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildSystemPrompt,
   isStaffQuestion,
   staffAgentReply,
 } from "../src/lib/agent";
@@ -71,6 +72,75 @@ test("staffAgentReply distinguishes official hub contacts from exact employees",
 
   assert.match(reply, /точные сотрудники пока не загружены/i);
   assert.match(reply, /@astana\.hub/);
+});
+
+test("staffAgentReply prioritizes the general director for director questions", () => {
+  const reply = staffAgentReply({
+    latestMessage: "Кто директор Astana Hub?",
+    staff: [
+      staff({
+        id: "office_director",
+        hub: "Astana Hub",
+        city: "Астана",
+        region: "astana",
+        name: "Диан Айбашпанов",
+        role: "Директор офиса регионального развития",
+      }),
+      staff({
+        id: "ceo",
+        hub: "Astana Hub",
+        city: "Астана",
+        region: "astana",
+        name: "Магжан Мадиев",
+        role: "Генеральный директор",
+      }),
+      staff({
+        id: "managing_director",
+        hub: "Astana Hub",
+        city: "Астана",
+        region: "astana",
+        name: "Назгуль Байтемирова",
+        role: "Управляющий директор",
+      }),
+    ],
+    region: "astana",
+    city: "Астана",
+  });
+
+  assert.ok(
+    reply.indexOf("Магжан Мадиев") < reply.indexOf("Назгуль Байтемирова"),
+  );
+  assert.ok(
+    reply.indexOf("Назгуль Байтемирова") < reply.indexOf("Диан Айбашпанов"),
+  );
+});
+
+test("buildSystemPrompt labels exact people separately from official contacts", () => {
+  const prompt = buildSystemPrompt({
+    events: [],
+    staff: [
+      staff({
+        id: "director",
+        name: "Магжан Мадиев",
+        role: "Генеральный директор",
+        source: "instagram_post:https://www.instagram.com/p/example/",
+      }),
+      staff({
+        id: "official",
+        name: "Команда Astana Hub",
+        role: "Официальный аккаунт хаба",
+        instagram: "@astana.hub",
+        source: "instagram_profile_manual",
+      }),
+    ],
+    today: "2026-06-13",
+    region: "astana",
+    city: "Астана",
+  });
+
+  assert.match(prompt, /record_type = "official_hub_contact"/);
+  assert.match(prompt, /"record_type": "person"/);
+  assert.match(prompt, /"record_type": "official_hub_contact"/);
 });
 
 function staff(overrides: Partial<HubStaff>): HubStaff {

@@ -80,6 +80,8 @@ export function buildSystemPrompt({
 - Формат события в тексте: [ФОРМАТ] Название / Дата · Время · Адрес / Описание.
 - Если событий нет, честно скажи об этом.
 - Если база команды содержит только общий контакт хаба, так и скажи: "точные сотрудники пока не загружены, можно написать в официальный Instagram".
+- Записи с record_type = "official_hub_contact" — это только общий контакт хаба, не конкретный сотрудник. Не называй их сотрудниками, директорами, менеджерами или командой людей.
+- Конкретными сотрудниками являются только записи с record_type = "person". Если таких записей нет, скажи, что точные сотрудники пока не загружены, и дай официальный Instagram хаба.
 - Для вопросов про команду обязательно перечисли каждого доступного сотрудника отдельной строкой: имя — роль — Instagram/contact.
 - Если пользователь спрашивает конкретную роль (директор, менеджер, руководитель), сначала покажи сотрудников с этой ролью. Если такой роли нет в базе команды, прямо скажи, что такой сотрудник в базе не найден, и покажи доступные контакты хаба.
 - Не смешивай ответ про команду с событиями, если пользователь явно не просит события.
@@ -115,6 +117,7 @@ function toPromptEvent(event: HubEvent) {
 
 function toPromptStaff(person: HubStaff) {
   return {
+    record_type: isOfficialHubContact(person) ? "official_hub_contact" : "person",
     hub: person.hub,
     city: person.city,
     name: person.name,
@@ -250,7 +253,10 @@ export function staffAgentReply({
   const { people, officialContacts } = splitStaffRecords(staff);
   const roleHints = staffRoleHints(latestMessage);
   const visiblePeople = roleHints.length
-    ? people.filter((person) => staffMatchesRoleHints(person, roleHints))
+    ? sortStaffForRoleQuery(
+        people.filter((person) => staffMatchesRoleHints(person, roleHints)),
+        roleHints,
+      )
     : people;
 
   if (roleHints.length && !visiblePeople.length) {
@@ -341,6 +347,38 @@ function staffMatchesRoleHints(person: HubStaff, roleHints: string[]) {
   const role = person.role?.toLowerCase() ?? "";
   const name = person.name.toLowerCase();
   return roleHints.some((hint) => role.includes(hint) || name.includes(hint));
+}
+
+function sortStaffForRoleQuery(staff: HubStaff[], roleHints: string[]) {
+  return [...staff].sort((a, b) => {
+    const priorityDiff =
+      staffRolePriority(a, roleHints) - staffRolePriority(b, roleHints);
+
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function staffRolePriority(person: HubStaff, roleHints: string[]) {
+  const role = person.role?.toLowerCase() ?? "";
+
+  if (roleHints.includes("директор")) {
+    if (/(генеральн|ceo|chief executive)/i.test(role)) return 0;
+    if (/^директор$/i.test(role.trim())) return 1;
+    if (/(управляющ|managing)/i.test(role)) return 2;
+    if (role.includes("директор")) return 3;
+  }
+
+  if (roleHints.includes("менеджер")) {
+    if (/^менеджер$/i.test(role.trim())) return 0;
+    if (role.includes("региональн")) return 1;
+    if (role.includes("менеджер")) return 2;
+  }
+
+  return 10;
 }
 
 function staffScope(
