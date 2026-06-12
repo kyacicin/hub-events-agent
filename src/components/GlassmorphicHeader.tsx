@@ -1,10 +1,10 @@
 "use client";
 
 import Image from 'next/image';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, ChevronDown } from 'lucide-react';
 import { HubOption, HubRegion } from '../types';
 import { HUB_LOCATIONS } from '../data';
-import { LANGS, Lang } from '../i18n';
+import { LANGS, Lang, localizeCity } from '../i18n';
 
 interface GlassmorphicHeaderProps {
   hubs: HubOption[];
@@ -69,23 +69,23 @@ export default function GlassmorphicHeader({
 
       {/* Controls: hub filter (secondary), language, theme */}
       <div className="flex flex-wrap items-center gap-2.5">
-        {/* Hub Quick Swapper Pill selector (secondary filter) */}
+        {/* Hub selector: all 19 regional hubs in a compact dropdown */}
         <div className="flex items-center gap-1.5 bg-neutral-200/60 dark:bg-neutral-900/60 border border-neutral-300/60 dark:border-neutral-800/80 p-1 rounded-2xl">
           <span className="hidden sm:inline text-[10px] font-mono text-neutral-500 px-2 uppercase tracking-tight">{t.activeHub}</span>
-          <div className="flex flex-wrap gap-1">
-            {hubs.map((hub) => (
-              <button
-                key={hub.region}
-                onClick={() => onRegionChange(hub.region)}
-                className={`px-2.5 py-1 text-xs rounded-xl transition-all duration-300 focus:outline-none ${
-                  activeRegion === hub.region
-                    ? 'bg-emerald-500 text-neutral-950 font-medium shadow-md shadow-emerald-500/10'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-              >
-                {hub.label}
-              </button>
-            ))}
+          <div className="relative">
+            <select
+              value={activeRegion}
+              onChange={(e) => onRegionChange(e.target.value)}
+              className="appearance-none pl-3 pr-8 py-1 text-xs rounded-xl bg-emerald-500 text-neutral-950 font-medium shadow-md shadow-emerald-500/10 cursor-pointer focus:outline-none"
+              aria-label={t.activeHub}
+            >
+              {hubs.map((hub) => (
+                <option key={hub.region} value={hub.region}>
+                  {hub.label} · {localizeCity(hub.cityName, lang)}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-neutral-950 pointer-events-none" />
           </div>
         </div>
 

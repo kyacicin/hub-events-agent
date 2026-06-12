@@ -47,17 +47,17 @@ export function hubOptionFor(region: HubRegion): HubOption | null {
   };
 }
 
-/** Hubs worth showing as pills: those with events or staff, HQ always first. */
-export function buildHubOptions(events: UiEvent[], members: UiMember[]): HubOption[] {
-  const regions = new Set<string>(['astana']);
-  events.forEach((e) => regions.add(e.hub));
-  members.forEach((m) => regions.add(m.hub));
-
-  return HUB_ACCOUNTS.filter((a) => regions.has(a.region)).map((a) => ({
-    region: a.region,
-    label: a.hub.replace(/\s*Hub$/i, ''),
-    cityName: a.city,
-  }));
+/** Every regional hub, HQ first, then alphabetically by label. */
+export function buildHubOptions(): HubOption[] {
+  return [...HUB_ACCOUNTS]
+    .map((a) => ({
+      region: a.region,
+      label: a.hub.replace(/\s*Hub$/i, ''),
+      cityName: a.city,
+    }))
+    .sort((a, b) =>
+      a.region === 'astana' ? -1 : b.region === 'astana' ? 1 : a.label.localeCompare(b.label),
+    );
 }
 
 // ---------------------------------------------------------------------------

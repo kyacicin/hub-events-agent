@@ -135,7 +135,7 @@ export default function SleekChat({
         e => e.format !== 'ONLINE' && hasMapRoute(e.hub),
       );
 
-      const aiMsg = makeMessage('assistant', data.reply, {
+      const aiMsg = makeMessage('assistant', data.reply.replace(/\*\*/g, ''), {
         carouselEvents: uiEvents.length ? uiEvents : undefined,
         teamMembers: uiMembers.length ? uiMembers : undefined,
         showMapForEventId: mappableEvent?.id,
@@ -155,7 +155,7 @@ export default function SleekChat({
       const text = error instanceof Error ? error.message : t.chatError;
       setMessages(prev => [
         ...prev,
-        makeMessage('assistant', `⚠️ ${text} ${t.chatTryLater}`),
+        makeMessage('assistant', `${text} ${t.chatTryLater}`),
       ]);
       onSaveToast(t.agentRequestError);
     } finally {
@@ -208,7 +208,7 @@ export default function SleekChat({
               className={`flex flex-col ${isAI ? 'items-start' : 'items-end'} gap-1`}
             >
               <div className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 px-1">
-                {isAI ? '🤖 AI Assistant' : `👤 ${t.chatYou}`} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {isAI ? 'AI Assistant' : t.chatYou} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
 
               {/* Chat Bubble */}
@@ -357,7 +357,7 @@ export default function SleekChat({
         {isSimulating && (
           <div className="flex flex-col items-start gap-1">
             <span className="text-[9px] font-mono text-amber-600 dark:text-amber-500 animate-pulse font-bold tracking-wider uppercase">
-              ⚡ {t.chatThinking}
+              {t.chatThinking}
             </span>
             <div className="rounded-2xl p-4 bg-neutral-100 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 flex items-center gap-3">
               <span className="relative flex h-3.5 w-3.5">
@@ -440,7 +440,7 @@ export default function SleekChat({
             </span>
             <span>{isSimulating ? t.chatThinking : t.chatOk}</span>
           </div>
-          <span>Gemini agent · RU / KZ / EN</span>
+          <span>Gemini agent · KZ / EN / RU</span>
         </div>
       </div>
     </div>

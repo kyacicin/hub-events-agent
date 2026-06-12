@@ -22,7 +22,7 @@ export default async function Home() {
     <HubVibePortal
       events={uiEvents}
       members={uiMembers}
-      hubs={buildHubOptions(uiEvents, uiMembers)}
+      hubs={buildHubOptions()}
     />
   );
 }

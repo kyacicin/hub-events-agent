@@ -35,7 +35,7 @@ export default function TeamDeck({ members, activeRegion, onSaveToast, lang, t }
       prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
     );
     if (willReveal && onSaveToast) {
-      onSaveToast(`🔓 ${t.contactsRevealed} ${name}`);
+      onSaveToast(`${t.contactsRevealed} ${name}`);
     }
   };
 
