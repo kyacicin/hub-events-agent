@@ -1,0 +1,6 @@
+{
+  "name": "Astana Hub Portal",
+  "description": "Интерактивный портал региональных IT-хабов Казахстана с интерактивной картой, контактами и умным AI-помощником.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID from Firebase Auth" },
+        "name": { "type": "string", "description": "Display name of the user" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "photoURL": { "type": "string", "description": "URL of the user profile photo" },
+        "favoriteHubId": { "type": "string", "description": "Preferred default regional IT hub ID" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of profile creation" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp of last profile update" }
+      },
+      "required": ["uid", "email"]
+    },
+    "EventRsvp": {
+      "title": "Event RSVP",
+      "description": "Tracks which user registered / intends to join which hub event.",
+      "type": "object",
+      "properties": {
+        "rsvpId": { "type": "string", "description": "Unique key (userId_eventId)" },
+        "userId": { "type": "string", "description": "UID of the registered user" },
+        "eventId": { "type": "string", "description": "ID of the target event" },
+        "hubId": { "type": "string", "description": "ID of the parent regional hub" },
+        "eventTitle": { "type": "string", "description": "Cached title of the event" },
+        "registeredAt": { "type": "string", "format": "date-time", "description": "Timestamp of registration" }
+      },
+      "required": ["rsvpId", "userId", "eventId", "registeredAt"]
+    },
+    "EventLike": {
+      "title": "Event Like",
+      "description": "Tracks event likes by user to prevent double liking and store favorites.",
+      "type": "object",
+      "properties": {
+        "likeId": { "type": "string", "description": "Unique key (userId_eventId)" },
+        "userId": { "type": "string", "description": "UID of the user who liked" },
+        "eventId": { "type": "string", "description": "ID of the liked event" },
+        "hubId": { "type": "string", "description": "ID of the parent hub" },
+        "likedAt": { "type": "string", "format": "date-time", "description": "Timestamp when liked" }
+      },
+      "required": ["likeId", "userId", "eventId", "likedAt"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "A single chat message stored in the user's session history.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the user who owns this history" },
+        "role": { "type": "string", "enum": ["user", "assistant"], "description": "Sender role" },
+        "content": { "type": "string", "description": "Body markdown text of the message" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Timestamp of the message sending" }
+      },
+      "required": ["userId", "role", "content", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Primary user profile document."
+    },
+    "/rsvps/{rsvpId}": {
+      "schema": "EventRsvp",
+      "description": "Interactive registrations of users attending hub events."
+    },
+    "/likes/{likeId}": {
+      "schema": "EventLike",
+      "description": "Registry of liked hub events for cross-session tracking."
+    },
+    "/users/{userId}/chatHistory/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Spacious user-specific permanent multi-turn AI chatbot history."
+    }
+  }
+}
