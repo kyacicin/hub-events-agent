@@ -5,17 +5,19 @@ import { motion } from 'motion/react';
 import { Navigation, Compass } from 'lucide-react';
 import { HubRegion } from '../types';
 import { HUB_LOCATIONS, MAP_BACKBONE, REGION_COORDS, mapNodes } from '../data';
+import { Lang, localizeAddress } from '../i18n';
 
 interface MiniMapProps {
   targetRegion: HubRegion;
   eventName: string;
   locationName: string;
   t: Record<string, string>;
+  lang: Lang;
 }
 
 const SOURCE_REGION = 'astana';
 
-export default function MiniMap({ targetRegion, eventName, locationName, t }: MiniMapProps) {
+export default function MiniMap({ targetRegion, eventName, locationName, t, lang }: MiniMapProps) {
   // Track which region's route has finished its draw-in delay; deriving
   // routeAnimated from it replays the animation on target change without
   // setting state synchronously in the effect.
@@ -50,7 +52,7 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
         <div className="text-right flex flex-col items-end shrink-0">
           <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-mono">
             <Compass className="w-3 animate-spin-slow" />
-            <span>Hub Link Active</span>
+            <span>{lang === 'kk' ? 'Хаб бағыты белсенді' : lang === 'en' ? 'Hub Link Active' : 'Маршрут хаба активен'}</span>
           </div>
           <span className="text-[10px] text-neutral-500 font-mono mt-0.5">Astana Hub → {matchedHub.name}</span>
         </div>
@@ -150,7 +152,7 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
         {/* Custom Controls Floating Labels */}
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-neutral-900/90 border border-neutral-800 text-[9px] font-mono text-neutral-400">
           <Navigation className="w-2.5 text-emerald-400" />
-          <span>Hub Coordinates Locked</span>
+          <span>{lang === 'kk' ? 'Хаб координаттары бекітілді' : lang === 'en' ? 'Hub Coordinates Locked' : 'Координаты хаба закреплены'}</span>
         </div>
         <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded bg-neutral-900/90 border border-neutral-800 text-[9px] font-mono text-emerald-400 font-medium">
           <span>{t.hubNetwork}</span>
@@ -162,12 +164,12 @@ export default function MiniMap({ targetRegion, eventName, locationName, t }: Mi
         <div className="p-2 rounded bg-neutral-100 dark:bg-neutral-950/50 border border-neutral-200 dark:border-neutral-900 text-left">
           <p className="text-[10px] font-sans text-neutral-500 uppercase tracking-wider">{t.routeStart}</p>
           <p className="text-xs text-neutral-700 dark:text-neutral-300 font-medium truncate">{HUB_LOCATIONS[SOURCE_REGION].name}</p>
-          <p className="text-[9px] text-neutral-500 truncate">{HUB_LOCATIONS[SOURCE_REGION].fullAddress}</p>
+          <p className="text-[9px] text-neutral-500 truncate">{localizeAddress(HUB_LOCATIONS[SOURCE_REGION].fullAddress, lang)}</p>
         </div>
         <div className="p-2 rounded bg-emerald-50 dark:bg-neutral-950/50 border border-emerald-200 dark:border-emerald-950/40 text-left">
           <p className="text-[10px] font-sans text-emerald-600 dark:text-emerald-500 uppercase tracking-wider">{t.routeDest}</p>
           <p className="text-xs text-neutral-700 dark:text-neutral-300 font-medium truncate">{matchedHub.name}</p>
-          <p className="text-[9px] text-neutral-500 truncate">{locationName || matchedHub.fullAddress}</p>
+          <p className="text-[9px] text-neutral-500 truncate">{localizeAddress(locationName || matchedHub.fullAddress, lang)}</p>
         </div>
       </div>
 

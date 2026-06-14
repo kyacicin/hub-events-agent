@@ -1,311 +1,212 @@
 "use client";
 
-import dynamic from 'next/dynamic';
-import type { PointerEvent } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { AlertCircle, ExternalLink, Loader2, LocateFixed, MapIcon, MapPinned, Maximize2, Minimize2, Navigation } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { HUB_LOCATIONS } from '../data';
+import { useMemo } from 'react';
+import { MapIcon } from 'lucide-react';
+import { REGION_COORDS, MAP_BACKBONE, mapNodes, HUB_LOCATIONS } from '../data';
 import type { HubOption, HubRegion } from '../types';
-import { syncSpotlightPointer } from './spotlightBorder';
+import type { Lang } from '../i18n';
+import HubInfoCard from './HubInfoCard';
 
 interface KazakhstanHubMapProps {
   activeRegion: HubRegion;
   hubs: HubOption[];
   onRegionChange: (region: HubRegion) => void;
+  userLocation: { lat: number; lng: number } | null;
+  geoStatus: 'idle' | 'locating' | 'ready' | 'denied' | 'error' | 'unsupported';
+  onLocate: () => void;
+  activeEventsCount: number;
+  activeStaffCount: number;
   t: Record<string, string>;
-}
-
-export interface UserGeoPoint {
-  lat: number;
-  lng: number;
-}
-
-const LeafletMap = dynamic(() => import('./KazakhstanHubMapLeaflet'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[330px] w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950/70 flex items-center justify-center text-neutral-500 dark:text-neutral-400">
-      <Loader2 className="w-5 h-5 animate-spin" />
-    </div>
-  ),
-});
-
-function distanceKm(from: UserGeoPoint, to: UserGeoPoint): number {
-  const radiusKm = 6371;
-  const toRad = (value: number) => (value * Math.PI) / 180;
-  const dLat = toRad(to.lat - from.lat);
-  const dLng = toRad(to.lng - from.lng);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(from.lat)) *
-      Math.cos(toRad(to.lat)) *
-      Math.sin(dLng / 2) ** 2;
-  return 2 * radiusKm * Math.asin(Math.min(1, Math.sqrt(a)));
-}
-
-function formatDistance(km: number, t: Record<string, string>): string {
-  if (km < 1) return `${Math.round(km * 1000)} ${t.meterUnit}`;
-  if (km < 100) return `${km.toFixed(1)} ${t.kilometerUnit}`;
-  return `${Math.round(km)} ${t.kilometerUnit}`;
-}
-
-function buildTwoGisRouteUrl(from: UserGeoPoint, to: UserGeoPoint): string {
-  return `https://2gis.kz/routeSearch/rsType/car/from/${from.lng},${from.lat}/to/${to.lng},${to.lat}`;
+  lang: Lang;
 }
 
 export default function KazakhstanHubMap({
   activeRegion,
   hubs,
   onRegionChange,
+  userLocation,
+  geoStatus,
+  onLocate,
+  activeEventsCount,
+  activeStaffCount,
   t,
+  lang,
 }: KazakhstanHubMapProps) {
-  const [userLocation, setUserLocation] = useState<UserGeoPoint | null>(null);
-  const [geoStatus, setGeoStatus] = useState<'idle' | 'locating' | 'ready' | 'denied' | 'error' | 'unsupported'>('idle');
-  const [isHovered, setIsHovered] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const rotateX = useTransform(mouseY, [-180, 180], [2.5, -2.5]);
-  const rotateY = useTransform(mouseX, [-180, 180], [-2.5, 2.5]);
-  const springRotateX = useSpring(rotateX, { stiffness: 300, damping: 30 });
-  const springRotateY = useSpring(rotateY, { stiffness: 300, damping: 30 });
-
   const selectedHub = HUB_LOCATIONS[activeRegion] ?? HUB_LOCATIONS.astana;
-  const selectedPoint = selectedHub.coordinates;
+  const nodes = useMemo(() => mapNodes(), []);
 
-  const distance = useMemo(() => {
-    if (!userLocation) return null;
-    return distanceKm(userLocation, selectedPoint);
-  }, [selectedPoint, userLocation]);
-
-  const routeUrl = userLocation
-    ? buildTwoGisRouteUrl(userLocation, selectedPoint)
-    : null;
-
-  const handleLocate = () => {
-    if (!('geolocation' in navigator)) {
-      setGeoStatus('unsupported');
-      return;
+  // Generate background grid lines
+  const gridLines = useMemo(() => {
+    const lines = [];
+    // Vertical grid lines
+    for (let x = 20; x < 500; x += 25) {
+      lines.push(<line key={`v-${x}`} x1={x} y1={0} x2={x} y2={320} stroke="rgba(16, 185, 129, 0.03)" strokeWidth="0.5" />);
     }
+    // Horizontal grid lines
+    for (let y = 20; y < 320; y += 25) {
+      lines.push(<line key={`h-${y}`} x1={0} y1={y} x2={500} y2={y} stroke="rgba(16, 185, 129, 0.03)" strokeWidth="0.5" />);
+    }
+    return lines;
+  }, []);
 
-    setGeoStatus('locating');
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-        setGeoStatus('ready');
-      },
-      (error) => {
-        setGeoStatus(error.code === error.PERMISSION_DENIED ? 'denied' : 'error');
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000,
-      },
-    );
-  };
-
-  const geoMessage =
-    geoStatus === 'denied'
-      ? t.locationDenied
-      : geoStatus === 'unsupported'
-        ? t.locationUnsupported
-        : geoStatus === 'error'
-          ? t.locationError
-          : null;
-
-  const handleCardPointerMove = (event: PointerEvent<HTMLElement>) => {
-    syncSpotlightPointer(event);
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    mouseX.set(event.clientX - centerX);
-    mouseY.set(event.clientY - centerY);
-  };
-
-  const handleCardPointerLeave = () => {
-    mouseX.set(0);
-    mouseY.set(0);
-    setIsHovered(false);
-  };
+  const activeNodeCoords = REGION_COORDS[activeRegion] ?? REGION_COORDS.astana;
 
   return (
-    <motion.section
-      data-spotlight-card
-      onPointerMove={handleCardPointerMove}
-      onPointerEnter={() => setIsHovered(true)}
-      onPointerLeave={handleCardPointerLeave}
-      style={{
-        rotateX: springRotateX,
-        rotateY: springRotateY,
-        transformStyle: 'preserve-3d',
-        perspective: 1000,
-      }}
-      className="z-20 rounded-3xl bg-white/85 dark:bg-neutral-900/75 border border-neutral-200 dark:border-neutral-800/80 backdrop-blur-xl p-4 shadow-xl shadow-neutral-200/40 dark:shadow-black/20 overflow-hidden"
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-blue-500/5 pointer-events-none" />
-      <div className="absolute inset-0 opacity-[0.035] pointer-events-none">
-        <svg width="100%" height="100%" className="absolute inset-0" aria-hidden="true">
-          <defs>
-            <pattern id="hub-map-grid" width="22" height="22" patternUnits="userSpaceOnUse">
-              <path d="M 22 0 L 0 0 0 22" fill="none" className="stroke-neutral-950 dark:stroke-white" strokeWidth="0.7" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#hub-map-grid)" />
-        </svg>
-      </div>
-
-      <div className="relative z-10 flex items-start justify-between gap-3 mb-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <motion.div
-              animate={{
-                filter: isHovered
-                  ? 'drop-shadow(0 0 8px rgba(52, 211, 153, 0.55))'
-                  : 'drop-shadow(0 0 3px rgba(52, 211, 153, 0.25))',
-              }}
-              transition={{ duration: 0.2 }}
-            >
-              <MapIcon className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-            </motion.div>
-            <h3 className="text-sm font-semibold font-sans uppercase tracking-wider text-neutral-600 dark:text-neutral-300">
-              {t.hubMapTitle}
-            </h3>
-          </div>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 truncate">
-            {t.hubsOnMap}: {hubs.length}
-          </p>
-          {isExpanded && (
-            <motion.p
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-1 text-[11px] font-mono text-neutral-500 dark:text-neutral-500"
-            >
-              {selectedPoint.lat.toFixed(4)}, {selectedPoint.lng.toFixed(4)}
-            </motion.p>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsExpanded((value) => !value)}
-            aria-label={isExpanded ? t.collapseMap : t.expandMap}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white/70 text-neutral-600 transition hover:text-neutral-950 hover:bg-white dark:border-neutral-800 dark:bg-neutral-950/50 dark:text-neutral-400 dark:hover:text-white"
-          >
-            {isExpanded ? (
-              <Minimize2 className="w-3.5 h-3.5" />
-            ) : (
-              <Maximize2 className="w-3.5 h-3.5" />
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleLocate}
-            disabled={geoStatus === 'locating'}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 px-3 py-2 text-xs font-medium transition hover:opacity-85 disabled:cursor-wait disabled:opacity-70"
-          >
-            {geoStatus === 'locating' ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <LocateFixed className="w-3.5 h-3.5" />
-            )}
-            {geoStatus === 'locating' ? t.locating : t.myLocation}
-          </button>
-        </div>
-      </div>
-
-      <motion.div
-        className="h-px bg-gradient-to-r from-emerald-500/50 via-emerald-400/30 to-transparent mb-4"
-        initial={false}
-        animate={{ scaleX: isHovered || isExpanded ? 1 : 0.3 }}
-        style={{ originX: 0 }}
-        transition={{ duration: 0.35, ease: 'easeOut' }}
-      />
-
-      <div className="relative z-10">
-        <LeafletMap
-          activeRegion={activeRegion}
-          hubs={hubs}
-          onRegionChange={onRegionChange}
-          userLocation={userLocation}
-          expanded={isExpanded}
-          t={t}
-        />
-      </div>
-
-      <div className="relative z-10 mt-4 grid grid-cols-1 gap-3">
-        <div
-          data-spotlight-card
-          onPointerMove={syncSpotlightPointer}
-          className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/50 p-3"
-        >
-          <div className="flex items-start gap-2">
-            <MapPinned className="w-4 h-4 mt-0.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-500">
-                {t.selectedHub}
-              </p>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">
-                {selectedHub.name}
-              </p>
-              <p className="text-xs text-neutral-600 dark:text-neutral-400 truncate">
-                {selectedHub.fullAddress}
-              </p>
-              <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-500">
-                {selectedHub.addressPrecision === 'exact' ? t.exactAddress : t.cityAddressFallback}
-              </p>
+    <div className="flex flex-col gap-4">
+      {/* SVG Map Widget */}
+      <section
+        className="rounded-3xl bg-neutral-950 border border-neutral-800 p-4 shadow-lg shadow-black/40 overflow-hidden relative"
+      >
+        {/* Map Header */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <MapIcon className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-xs font-semibold font-mono uppercase tracking-wider text-neutral-300">
+                {t.hubMapTitle || 'КАРТА ХАБОВ КАЗАХСТАНА'}
+              </h3>
             </div>
+            <p className="mt-0.5 text-[9px] text-neutral-500 font-mono">
+              {t.hubsOnMap || 'СЕТЬ ФИЛИАЛОВ'}: {hubs.length} {t.hubsCountUnit || 'ХАБОВ'}
+            </p>
           </div>
+          <span className="inline-flex items-center rounded bg-emerald-400/5 px-1.5 py-0.5 text-[9px] font-mono font-medium text-emerald-400 ring-1 ring-inset ring-emerald-400/20">
+            ONLINE VIEW
+          </span>
         </div>
 
-        {(distance || routeUrl || geoMessage) && (
-          <div
-            data-spotlight-card
-            onPointerMove={syncSpotlightPointer}
-            className="rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/50 p-3"
+        {/* SVG Viewport */}
+        <div className="relative border border-neutral-900 rounded-2xl overflow-hidden bg-[#03070c]">
+          <svg
+            viewBox="0 0 500 320"
+            className="w-full h-auto select-none"
           >
-            {geoMessage ? (
-              <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{geoMessage}</span>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Navigation className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-500">
-                      {t.routeDistance}
-                    </p>
-                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                      {distance ? formatDistance(distance, t) : '—'}
-                    </p>
-                  </div>
-                </div>
+            {/* Grid Overlay */}
+            {gridLines}
 
-                {routeUrl && (
-                  <a
-                    href={routeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-400 px-3 py-2 text-xs font-medium text-neutral-950 transition hover:bg-emerald-300"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    {t.open2gisRoute}
-                  </a>
-                )}
-              </div>
+            {/* Backbone connections from Astana */}
+            {MAP_BACKBONE.map((reg) => {
+              const coords = REGION_COORDS[reg];
+              if (!coords) return null;
+              return (
+                <line
+                  key={`backbone-${reg}`}
+                  x1={REGION_COORDS.astana.x}
+                  y1={REGION_COORDS.astana.y}
+                  x2={coords.x}
+                  y2={coords.y}
+                  stroke="rgba(16, 185, 129, 0.15)"
+                  strokeWidth="1"
+                  strokeDasharray="4 6"
+                />
+              );
+            })}
+
+            {/* Dynamic Active Route Connection */}
+            {activeRegion !== 'astana' && activeNodeCoords && (
+              <path
+                d={`M ${REGION_COORDS.astana.x} ${REGION_COORDS.astana.y} Q ${(REGION_COORDS.astana.x + activeNodeCoords.x) / 2 + 15} ${(REGION_COORDS.astana.y + activeNodeCoords.y) / 2 - 25} ${activeNodeCoords.x} ${activeNodeCoords.y}`}
+                fill="none"
+                stroke="#10b981"
+                strokeWidth="1.2"
+                strokeDasharray="5 5"
+                className="animate-dash-flow"
+              />
             )}
+
+            {/* Hub Nodes & Labels */}
+            {nodes.map((node) => {
+              const isActive = node.region === activeRegion;
+              const isAstana = node.region === 'astana';
+              const isBackbone = MAP_BACKBONE.includes(node.region);
+
+              // Position label above/below dot based on vertical position to avoid edge clipping
+              const labelOffsetY = node.y < 40 ? 12 : -8;
+
+              // Determine label visibility
+              const showLabel = isActive || isAstana || isBackbone;
+
+              return (
+                <g key={node.region} className="group">
+                  {/* Clicking areas (larger invisible circle for easier mobile tap) */}
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r="12"
+                    fill="transparent"
+                    className="cursor-pointer"
+                    onClick={() => onRegionChange(node.region)}
+                  />
+
+                  {/* Pulsing Outer Circle for Active Hub */}
+                  {isActive && (
+                    <circle
+                      cx={node.x}
+                      cy={node.y}
+                      r="12"
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="1"
+                      className="animate-pulse-dot"
+                    />
+                  )}
+
+                  {/* Node Circle */}
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={isActive ? 6 : isAstana ? 4.5 : 3}
+                    fill={isActive ? '#10b981' : isAstana ? '#3b82f6' : '#4b5563'}
+                    className={`cursor-pointer transition-colors duration-200 ${
+                      isActive ? 'stroke-neutral-950 stroke-1' : 'group-hover:fill-neutral-300'
+                    }`}
+                    onClick={() => onRegionChange(node.region)}
+                  />
+
+                  {/* Label */}
+                  {showLabel && (
+                    <text
+                      x={node.x}
+                      y={node.y + labelOffsetY}
+                      textAnchor="middle"
+                      onClick={() => onRegionChange(node.region)}
+                      className={`cursor-pointer font-mono font-bold select-none transition-colors duration-200 ${
+                        isActive
+                          ? 'fill-emerald-400 text-[9px]'
+                          : isAstana
+                            ? 'fill-blue-400 text-[8px]'
+                            : 'fill-neutral-500 group-hover:fill-neutral-300 text-[7px]'
+                      }`}
+                    >
+                      {node.label}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Bottom network indicator overlay */}
+          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-neutral-950/80 px-2 py-0.5 rounded border border-neutral-800/60">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <span className="text-[8px] font-mono uppercase tracking-wider text-emerald-400">
+              {lang === 'kk' ? 'ХАБ ЖЕЛІСІ · БЕЛСЕНДІ' : lang === 'en' ? 'HUB NETWORK · ACTIVE' : 'СЕТЬ ХАБОВ · АКТИВНА'}
+            </span>
           </div>
-        )}
-      </div>
-    </motion.section>
+        </div>
+      </section>
+
+      {/* Selected Hub Details Widget */}
+      <HubInfoCard
+        selectedHub={selectedHub}
+        activeEventsCount={activeEventsCount}
+        activeStaffCount={activeStaffCount}
+        geoStatus={geoStatus}
+        onLocate={onLocate}
+        userLocation={userLocation}
+        t={t}
+        lang={lang}
+      />
+    </div>
   );
 }

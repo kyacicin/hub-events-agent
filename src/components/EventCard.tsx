@@ -6,14 +6,14 @@ type EventCardProps = {
 };
 
 const FORMAT_LABELS: Record<HubEvent["format"], string> = {
-  offline: "Offline",
-  online: "Online",
-  hybrid: "Hybrid",
+  offline: "🔴 ОФЛАЙН",
+  online: "🟢 ОНЛАЙН",
+  hybrid: "🟡 ГИБРИД",
 };
 
 const FORMAT_STYLES: Record<HubEvent["format"], string> = {
-  offline: "bg-[#eef5ff] text-[#2466a8]",
-  online: "bg-[#eefaf2] text-[#4ca364]",
+  offline: "bg-[#fff1f1] text-[#a83232]",
+  online: "bg-[#eefaf2] text-[#167a3a]",
   hybrid: "bg-[#fff7df] text-[#916b14]",
 };
 

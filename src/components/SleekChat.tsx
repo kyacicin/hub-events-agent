@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Send, MapPin, Clock, Calendar, ExternalLink } from 'lucide-react';
+import { useCallback, useState, useEffect, useRef } from 'react';
+import { Send, ExternalLink } from 'lucide-react';
 import { HUB_LOCATIONS, hasMapRoute, isStaffQuery, toUiEvent, toUiMember } from '../data';
 import { ChatMessage, HubOption, HubRegion, UiEvent } from '../types';
-import { Lang, formatDay, localizeCity, localizeName, localizeRole } from '../i18n';
+import { Lang, localizeCity } from '../i18n';
 import type { HubEvent, HubStaff } from '@/lib/schemas';
 import MiniMap from './MiniMap';
-import { syncSpotlightPointer } from './spotlightBorder';
 
 interface SleekChatProps {
   hubs: HubOption[];
@@ -20,6 +19,8 @@ interface SleekChatProps {
   setIsSimulating: (sim: boolean) => void;
   lang: Lang;
   t: Record<string, string>;
+  externalPrompt?: string | null;
+  onClearExternalPrompt?: () => void;
 }
 
 type ChatApiResponse = {
@@ -33,13 +34,10 @@ type ChatApiResponse = {
 
 const MAX_INLINE_EVENTS = 4;
 
-// Keep generated ids independent from module reloads. Fast Refresh preserves
-// React state but re-runs module scope, so counters can create duplicate keys.
 function uniqueMessageId(sender: ChatMessage['sender']): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return `${sender}-${crypto.randomUUID()}`;
   }
-
   return `${sender}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
@@ -70,33 +68,38 @@ export default function SleekChat({
   onRegionChanged,
   onSaveToast,
   onSetAuxView,
-  onShowDirections,
   isSimulating,
   setIsSimulating,
   lang,
   t,
+  externalPrompt,
+  onClearExternalPrompt,
 }: SleekChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => introMessages(t));
   const [inputText, setInputText] = useState('');
   const [inlineMapEventId, setInlineMapEventId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastRegionRef = useRef<HubRegion>(activeRegion);
 
-  // (Re)initialize the intro messages after hydration and whenever the UI
-  // language changes while the conversation is still untouched.
+  // Auto-greeting when active hub is switched
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMessages(prev =>
-      prev.some(m => !m.id.startsWith('init')) ? prev : introMessages(t),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
+    if (lastRegionRef.current !== activeRegion) {
+      lastRegionRef.current = activeRegion;
+      const hubName = HUB_LOCATIONS[activeRegion]?.name ?? activeRegion;
+      const greeting = lang === 'kk'
+        ? `Сіз ${hubName} таңдадыңыз. Осы өңір бойынша сізге қалай көмектесе аламын?`
+        : lang === 'en'
+          ? `You have selected ${hubName}. How can I help you with this region?`
+          : `Вы выбрали ${hubName}. Чем могу помочь по этому региону?`;
 
-  // Scroll to bottom when messages load or the inline mini-map expands
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isSimulating, inlineMapEventId]);
+      setMessages(prev => [
+        ...prev,
+        makeMessage('assistant', greeting)
+      ]);
+    }
+  }, [activeRegion, lang]);
 
-  const handleSendMessage = async (textToSend: string) => {
+  const handleSendMessage = useCallback(async (textToSend: string) => {
     if (!textToSend.trim() || isSimulating) return;
 
     const userMsg = makeMessage('user', textToSend.trim());
@@ -108,9 +111,6 @@ export default function SleekChat({
 
     try {
       const activeCity = hubs.find(h => h.region === activeRegion)?.cityName;
-      // The selected hub acts as a fallback location: region detection walks
-      // the history from newest to oldest, so an explicit city in the user's
-      // text always wins over this hint.
       const apiMessages = [
         ...(activeCity ? [{ role: 'user' as const, content: `Мой город: ${activeCity}.` }] : []),
         ...history.slice(-9).map(m => ({
@@ -164,7 +164,36 @@ export default function SleekChat({
     } finally {
       setIsSimulating(false);
     }
-  };
+  }, [
+    activeRegion,
+    hubs,
+    isSimulating,
+    messages,
+    onRegionChanged,
+    onSaveToast,
+    onSetAuxView,
+    setIsSimulating,
+    t.agentRequestError,
+    t.chatError,
+    t.chatTryLater,
+  ]);
+
+  // Handle external prompts (e.g. from TeamDeck or EventCarousel Ask AI clicks)
+  useEffect(() => {
+    if (externalPrompt) {
+      const timer = window.setTimeout(() => {
+        void handleSendMessage(externalPrompt);
+        onClearExternalPrompt?.();
+      }, 0);
+
+      return () => window.clearTimeout(timer);
+    }
+  }, [externalPrompt, handleSendMessage, onClearExternalPrompt]);
+
+  // Scroll to bottom when messages load or the inline mini-map expands
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isSimulating, inlineMapEventId]);
 
   const toggleInlineMap = (eventId?: string) => {
     const eId = eventId ?? null;
@@ -172,34 +201,28 @@ export default function SleekChat({
     onSaveToast(t.plottingInline);
   };
 
-  const quickActions: Array<{ label: string; prompt: string }> = [
-    { label: t.actionFindEvents, prompt: t.promptFindEvents },
-    { label: t.actionAllCities, prompt: t.promptAllCities },
-    { label: t.actionOnline, prompt: t.promptOnline },
-    { label: t.actionThisWeek, prompt: t.promptThisWeek },
+  // Modern quick command actions as requested
+  const quickActions = lang === 'kk' ? [
+    { label: "Астанада не өтеді?", prompt: "Астанада не өтеді?" },
+    { label: "Координатор кім?", prompt: "Координатор кім?" },
+    { label: "Қандай жеңілдіктер бар?", prompt: "Қандай жеңілдіктер бар?" },
+  ] : lang === 'en' ? [
+    { label: "What is happening in Astana?", prompt: "What is happening in Astana?" },
+    { label: "Who is the coordinator?", prompt: "Who is the coordinator?" },
+    { label: "What are the benefits?", prompt: "What are the benefits?" },
+  ] : [
+    { label: "Что проходит в Астане?", prompt: "Что проходит в Астане?" },
+    { label: "Кто координатор?", prompt: "Кто координатор?" },
+    { label: "Какие льготы?", prompt: "Какие льготы?" },
   ];
-
-  const activeHubName = HUB_LOCATIONS[activeRegion]?.name ?? activeRegion;
 
   return (
     <div
       id="sleek-chat-container"
-      data-spotlight-card
-      onPointerMove={syncSpotlightPointer}
-      className="flex flex-col w-full h-[700px] min-h-[700px] max-h-[700px] shrink-0 rounded-3xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xl shadow-neutral-300/40 dark:shadow-black/40 relative overflow-hidden transition-colors duration-300"
+      className="flex flex-col w-full h-[calc(100vh-90px)] min-h-[500px] shrink-0 rounded-3xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xl shadow-neutral-300/40 dark:shadow-black/40 relative overflow-hidden transition-colors duration-300"
     >
-
-      {/* Slim status bar */}
-      <div className="px-4 py-3 bg-neutral-50/90 dark:bg-neutral-900/90 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between text-sm z-30">
-        <div />
-        <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
-          <MapPin className="w-3" />
-          {activeHubName}
-        </span>
-      </div>
-
       {/* Messages Canvas Area */}
-      <div className="min-h-0 flex-1 overflow-y-auto p-5 space-y-4 select-text">
+      <div className="min-h-0 flex-1 overflow-y-auto p-5 space-y-4 select-text panel-scroll">
         {messages.map((message, index) => {
           const isAI = message.sender === 'assistant';
           const hasInlineEvents = isAI && !!message.carouselEvents?.length;
@@ -207,156 +230,90 @@ export default function SleekChat({
           return (
             <div
               key={`${message.id}-${index}`}
-              className={`flex flex-col ${isAI ? 'items-start' : 'items-end'} gap-1`}
+              className="flex flex-col w-full"
             >
-              <div className="text-[11px] font-mono text-neutral-400 dark:text-neutral-500 px-1">
-                {isAI ? 'AI Assistant' : t.chatYou} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <div className={`text-[10px] font-mono text-neutral-400 dark:text-neutral-500 mb-1 ${isAI ? 'text-left' : 'text-right'}`}>
+                {isAI ? (lang === 'kk' ? 'ЖИ ассистенті' : lang === 'en' ? 'AI Assistant' : 'ИИ-ассистент') : t.chatYou} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
 
               {/* Chat Bubble */}
               <div
-                data-spotlight-card
-                onPointerMove={syncSpotlightPointer}
-                className={`${hasInlineEvents ? 'w-full' : 'max-w-[88%]'} rounded-2xl p-4 text-sm text-left ${
-                isAI
-                  ? 'bg-neutral-100 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200'
-                  : 'bg-emerald-500 text-neutral-950 font-medium font-sans shadow-md shadow-emerald-500/10'
-              }`}
+                className={`rounded-2xl p-4 text-xs leading-relaxed max-w-[85%] ${
+                  isAI
+                    ? 'bg-neutral-100 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 text-neutral-800 dark:text-neutral-200 self-start'
+                    : 'bg-emerald-500 text-neutral-950 font-bold self-end shadow-md shadow-emerald-500/10'
+                }`}
               >
-                <div className="whitespace-pre-wrap leading-relaxed">
+                <div className="whitespace-pre-wrap">
                   {message.text}
                 </div>
 
                 {isAI && message.modelStatus === 'fallback' && (
-                  <p className="mt-2 pt-2 border-t border-neutral-200 dark:border-neutral-800 text-[11px] font-mono text-amber-600 dark:text-amber-500/80">
+                  <p className="mt-2 pt-2 border-t border-neutral-200 dark:border-neutral-800 text-[10px] font-mono text-amber-600 dark:text-amber-500/85">
                     {t.chatFallbackNote}
                   </p>
                 )}
 
-                {/* Events as the result of the answer — compact in-chat cards */}
+                {/* Inline Events inside Chat */}
                 {hasInlineEvents && (
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {message.carouselEvents!.slice(0, MAX_INLINE_EVENTS).map((event) => (
-                      <div
-                        key={event.id}
-                        data-spotlight-card
-                        onPointerMove={syncSpotlightPointer}
-                        className="rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-3 flex flex-col gap-1.5 hover:border-emerald-500/40 transition-colors"
-                      >
-                        <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-wider">
-                          <span className="text-neutral-500 dark:text-neutral-400">{event.format}</span>
+                    {message.carouselEvents!.slice(0, MAX_INLINE_EVENTS).map((event) => {
+                      const formatBadge =
+                        event.format === 'ONLINE'
+                          ? '🟢 ОНЛАЙН'
+                          : event.format === 'HYBRID'
+                            ? '🟡 ГИБРИД'
+                            : '🔴 ОФЛАЙН';
+
+                      return (
+                        <div
+                          key={event.id}
+                          className="rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 p-3 flex flex-col gap-1.5 hover:border-emerald-500/40 transition-colors"
+                        >
+                        <div className="flex items-center gap-1.5 text-[9px] font-mono font-bold">
+                          <span className="text-neutral-600 dark:text-neutral-300">{formatBadge}</span>
                           <span className="ml-auto text-emerald-600 dark:text-emerald-500 uppercase">{localizeCity(event.cityName, lang)}</span>
                         </div>
-                        <h5 className="text-sm font-sans font-bold leading-tight text-neutral-900 dark:text-neutral-100 line-clamp-2">
+                        <h5 className="text-xs font-sans font-bold leading-tight text-neutral-900 dark:text-neutral-100 line-clamp-2">
                           {event.title}
                         </h5>
-                        <div className="flex items-center gap-2.5 text-[11px] font-mono text-neutral-500 dark:text-neutral-400">
-                          <span className="flex items-center gap-1"><Calendar className="w-2.5" />{formatDay(event.date, lang)}</span>
-                          {event.time && <span className="flex items-center gap-1"><Clock className="w-2.5" />{event.time}</span>}
-                        </div>
-                        <p className="text-[11px] text-neutral-500 dark:text-neutral-500 truncate">{event.locationName}</p>
-                        <div className="flex items-center gap-1.5 mt-auto pt-1">
+                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 line-clamp-2 font-sans">
+                          {event.description}
+                        </p>
+                        <div className="flex items-center gap-2 pt-1 border-t border-neutral-100 dark:border-neutral-900 mt-auto">
                           {event.format !== 'ONLINE' && hasMapRoute(event.hub) && (
                             <button
-                              onClick={() => onShowDirections(event)}
-                              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-mono font-bold rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all cursor-pointer"
+                              onClick={() => toggleInlineMap(event.id)}
+                              className="inline-flex items-center justify-center h-6 px-2 text-[9px] font-mono font-semibold rounded bg-emerald-500 text-neutral-950 hover:bg-emerald-400 cursor-pointer"
                             >
-                              <MapPin className="w-2.5" />
-                              {t.route}
+                              {inlineMapEventId === event.id ? t.hideRoute : t.route}
                             </button>
                           )}
                           <a
                             href={event.instagramUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-mono font-bold rounded-lg bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 transition-all"
+                            className="inline-flex items-center gap-1 text-[9px] font-mono text-neutral-500 dark:text-neutral-400 hover:text-emerald-600 dark:hover:text-emerald-400"
                           >
-                            <ExternalLink className="w-2.5" />
-                            {t.openPost}
+                            <ExternalLink className="w-2.5 h-2.5" />
+                            <span>Instagram</span>
                           </a>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
 
-                {/* Overflow hint -> secondary events panel */}
-                {hasInlineEvents && message.carouselEvents!.length > MAX_INLINE_EVENTS && (
-                  <button
-                    onClick={() => onSetAuxView('events')}
-                    className="mt-2 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-                  >
-                    +{message.carouselEvents!.length - MAX_INLINE_EVENTS} {t.moreInPanel}
-                  </button>
-                )}
-
-                {/* Inline vector mini-map for offline events */}
-                {isAI && message.showMapForEventId && (
-                  <div className="mt-3">
-                    <button
-                      onClick={() => toggleInlineMap(message.showMapForEventId)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-mono font-bold bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 hover:border-emerald-500/40 text-emerald-600 dark:text-emerald-400 transition-all cursor-pointer"
-                    >
-                      <MapPin className="w-3" />
-                      {inlineMapEventId === message.showMapForEventId ? t.hideMap : t.showMap}
-                    </button>
-
-                    {inlineMapEventId === message.showMapForEventId && (
-                      <div className="mt-2">
-                        {(() => {
-                          const associatedEvent = message.carouselEvents?.find(e => e.id === message.showMapForEventId);
-                          return (
+                        {inlineMapEventId === event.id && (
+                          <div className="mt-2 h-[120px] rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 relative z-40">
                             <MiniMap
-                              targetRegion={associatedEvent?.hub || activeRegion}
-                              eventName={associatedEvent?.title || ''}
-                              locationName={associatedEvent?.locationName || ''}
+                              targetRegion={event.hub}
+                              eventName={event.title}
+                              locationName={event.locationName}
                               t={t}
+                              lang={lang}
                             />
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Inline contact cards when the agent returns staff */}
-                {isAI && message.teamMembers && (
-                  <div
-                    data-spotlight-card
-                    onPointerMove={syncSpotlightPointer}
-                    className="mt-3 p-1 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
-                  >
-                    <div className="text-[11px] font-mono font-bold text-neutral-500 uppercase tracking-tight px-3 py-1 border-b border-neutral-200 dark:border-neutral-900 mb-1">
-                      {t.teamContacts}
-                    </div>
-                    {message.teamMembers.map(m => (
-                      <div key={m.id} className="p-2 border-b last:border-b-0 border-neutral-100 dark:border-neutral-900/60 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={m.avatarUrl} alt="" className="w-6 h-6 rounded-md object-cover" />
-                          <div>
-                            <p className="font-bold text-neutral-900 dark:text-neutral-200">{localizeName(m.name, lang)}</p>
-                            <p className="text-[10px] text-neutral-500">{localizeRole(m.role, lang)} · {localizeCity(m.cityName, lang)}</p>
                           </div>
-                        </div>
-                        {m.instagram && (
-                          <a
-                            href={`https://www.instagram.com/${m.instagram.replace('@', '')}/`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2 py-1 rounded bg-pink-100 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 hover:bg-pink-200 dark:hover:bg-pink-900/40 text-[10px] font-mono font-bold transition-all border border-pink-200 dark:border-pink-900/50"
-                          >
-                            {m.instagram}
-                          </a>
                         )}
                       </div>
-                    ))}
-                    <button
-                      onClick={() => onSetAuxView('team')}
-                      className="w-full text-left px-3 py-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-                    >
-                      {t.openTeamDeck}
-                    </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -364,14 +321,13 @@ export default function SleekChat({
           );
         })}
 
-        {/* Live parsing pulsing dot loader */}
         {isSimulating && (
           <div className="flex flex-col items-start gap-1">
-            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-500 font-bold tracking-wider uppercase">
+            <span className="text-[9px] font-mono text-amber-500 font-bold tracking-wider uppercase">
               {t.chatThinking}
             </span>
-            <div className="rounded-2xl p-4 bg-neutral-100 dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 flex items-center gap-3">
-              <p className="text-sm font-mono">{t.chatSearching} {activeHubName}...</p>
+            <div className="rounded-2xl p-4 bg-neutral-100 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300">
+              <p className="text-xs font-mono">{t.chatSearching}...</p>
             </div>
           </div>
         )}
@@ -379,22 +335,22 @@ export default function SleekChat({
       </div>
 
       {/* Quick user actions */}
-      <div className="p-3 bg-neutral-50 dark:bg-neutral-950 border-t border-neutral-200 dark:border-neutral-900 flex gap-2 overflow-x-auto select-none">
+      <div className="p-2.5 bg-neutral-50 dark:bg-neutral-950 border-t border-neutral-200 dark:border-neutral-900 flex gap-2 overflow-x-auto select-none">
         {quickActions.map(({ label, prompt }) => (
           <button
             key={label}
             onClick={() => void handleSendMessage(prompt)}
             disabled={isSimulating}
-            className="shrink-0 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs font-sans font-medium hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 text-neutral-600 dark:text-neutral-300 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[11px] font-mono text-neutral-600 dark:text-neutral-300 hover:border-emerald-500/50 hover:text-emerald-500 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {label}
           </button>
         ))}
       </div>
 
-      {/* Sleek Input Dock with Character Limits */}
-      <div className="p-4 bg-neutral-50/80 dark:bg-neutral-900/80 border-t border-neutral-200 dark:border-neutral-800 backdrop-blur-md relative">
-        <div className="relative flex items-end gap-3 rounded-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 px-4 py-3 focus-within:border-emerald-500/50 dark:focus-within:border-neutral-700 transition-colors">
+      {/* Sleek Input Dock */}
+      <div className="p-3 bg-neutral-50/80 dark:bg-neutral-900/80 border-t border-neutral-200 dark:border-neutral-800 backdrop-blur-md relative">
+        <div className="relative flex items-end gap-3 rounded-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 px-4 py-3 focus-within:border-emerald-500/50 dark:focus-within:border-neutral-800 transition-colors">
           <textarea
             value={inputText}
             onChange={(e) => {
@@ -407,20 +363,20 @@ export default function SleekChat({
               }
             }}
             placeholder={t.chatPlaceholder}
-            className="min-h-12 flex-1 bg-transparent text-sm font-sans leading-relaxed text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 outline-none resize-none border-0 p-0 focus:ring-0"
+            className="min-h-10 flex-1 bg-transparent text-xs font-sans leading-relaxed text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 outline-none resize-none border-0 p-0 focus:ring-0"
           />
 
           <button
             disabled={!inputText.trim() || isSimulating}
             onClick={() => void handleSendMessage(inputText)}
-            className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all ${
+            className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-all ${
               inputText.trim() && !isSimulating
                 ? 'bg-emerald-500 hover:bg-emerald-400 scale-105 shadow-md shadow-emerald-500/25 active:scale-95 text-neutral-950'
                 : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 cursor-not-allowed'
             }`}
             title={t.chatSend}
           >
-            <Send className="w-4 h-4 rotate-45 transform" />
+            <Send className="w-3.5 h-3.5 rotate-45 transform" />
           </button>
         </div>
       </div>

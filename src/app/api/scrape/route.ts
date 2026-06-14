@@ -19,9 +19,28 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Persists to Vercel KV when configured, otherwise the local filesystem.
-    // On Vercel without a KV store, writeData throws a clear error instead of
-    // discarding the scrape into the ephemeral serverless filesystem.
+    const result = await scrapeHubEvents({ persist: true });
+    return NextResponse.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const secret = process.env.SCRAPE_SECRET;
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get("Authorization");
+
+  const isCronAuth = cronSecret && authHeader === `Bearer ${cronSecret}`;
+  const isHeaderAuth = secret && request.headers.get("x-scrape-secret") === secret;
+  const isQueryAuth = secret && request.nextUrl.searchParams.get("secret") === secret;
+
+  if (!isCronAuth && !isHeaderAuth && !isQueryAuth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
     const result = await scrapeHubEvents({ persist: true });
     return NextResponse.json(result);
   } catch (error) {

@@ -33,6 +33,39 @@
     "source": "instagram_post:https://www.instagram.com/p/DYW5EEutt0Y/"
   },
   {
+    "id": "staff_astana_zhansaya_kalybekova",
+    "hub": "Astana Hub",
+    "city": "Астана",
+    "region": "astana",
+    "name": "Жансая Калыбекова",
+    "role": "Директор офиса регулирования",
+    "instagram": null,
+    "contact": null,
+    "source": "official_site:https://astanahub.com/en/registration/"
+  },
+  {
+    "id": "staff_astana_askhat_sabzhan",
+    "hub": "Astana Hub",
+    "city": "Астана",
+    "region": "astana",
+    "name": "Асхат Сабжан",
+    "role": "Главный менеджер по регулированию",
+    "instagram": null,
+    "contact": null,
+    "source": "official_site:https://astanahub.com/en/registration/"
+  },
+  {
+    "id": "staff_astana_aiganym_zhientaeva",
+    "hub": "Astana Hub",
+    "city": "Астана",
+    "region": "astana",
+    "name": "Айганым Жиентаева",
+    "role": "Старший менеджер по регулированию",
+    "instagram": null,
+    "contact": null,
+    "source": "official_site:https://astanahub.com/en/registration/"
+  },
+  {
     "id": "staff_qostanai_damir_mnaidarov",
     "hub": "Qostanai Hub",
     "city": "Костанай",
@@ -53,6 +86,17 @@
     "instagram": null,
     "contact": null,
     "source": "instagram_post:https://www.instagram.com/p/DYy4AryjJzS/"
+  },
+  {
+    "id": "staff_alatau_sergey_shipulin",
+    "hub": "Alatau Hub",
+    "city": "Алатау",
+    "region": "alatau",
+    "name": "Сергей Шипулин",
+    "role": "Менеджер Alatau Hub",
+    "instagram": null,
+    "contact": null,
+    "source": "official_site:https://astanahub.com/"
   },
   {
     "id": "staff_turkistan_hub_contact",

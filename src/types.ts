@@ -29,6 +29,7 @@ export interface UiEvent {
   /** Link to the source Instagram post */
   instagramUrl: string;
   locationName: string;
+  parsedAt?: string;
 }
 
 /** Directory entry adapted from a parsed HubStaff record. */
@@ -83,3 +84,5 @@ export interface HubOption {
   label: string;
   cityName: string;
 }
+
+export type MobileTab = 'content' | 'chat' | 'map';

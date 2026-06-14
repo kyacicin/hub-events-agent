@@ -18,7 +18,7 @@ const ru: Dict = {
   tabEvents: 'События',
   tabTeam: 'Команда',
   chatIntro1:
-    'Сәлем! Я AI-ассистент региональных хабов Astana Hub. Напишите свой город — найду предстоящие события, форматы, адреса и контакты команды.',
+    'Сәлем! Я ИИ-ассистент региональных хабов Astana Hub. Напишите свой город — найду предстоящие события, форматы, адреса и контакты команды.',
   chatIntro2:
     'Например: «Привет, я из Тараза. Что есть в ближайшее время?» — или воспользуйтесь быстрыми действиями внизу.',
   chatPlaceholder: 'Напишите свой город и вопрос...',
@@ -95,6 +95,8 @@ const ru: Dict = {
   openedTeamDeck: 'Команда открыта!',
   agentRequestError: 'Ошибка запроса к агенту',
   bioSource: 'Данные собраны из Instagram хаба.',
+  askAI: 'Спросить ИИ',
+  askAIAboutRole: 'Спросить ИИ об этой роли',
   mon: 'Понедельник', tue: 'Вторник', wed: 'Среда', thu: 'Четверг',
   fri: 'Пятница', sat: 'Суббота', sun: 'Воскресенье',
 };
@@ -105,20 +107,20 @@ const kk: Dict = {
   tabEvents: 'Іс-шаралар',
   tabTeam: 'Команда',
   chatIntro1:
-    'Сәлем! Мен Astana Hub аймақтық хабтарының AI-ассистентімін. Қалаңызды жазыңыз — алдағы іс-шараларды, форматтарды, мекенжайлар мен команда контактілерін табамын.',
+    'Сәлем! Мен Astana Hub өңірлік хабтарының ЖИ ассистентімін. Қалаңызды жазыңыз — алдағы іс-шараларды, форматтарды, мекенжайларды және команда байланыстарын табамын.',
   chatIntro2:
     'Мысалы: «Сәлем, мен Таразданмын. Жақын арада не бар?» — немесе төмендегі жылдам әрекеттерді пайдаланыңыз.',
   chatPlaceholder: 'Қалаңыз бен сұрағыңызды жазыңыз...',
   chatYou: 'Сіз',
   chatNewLine: 'Shift + Enter — жаңа жол',
   chatSend: 'Жіберу',
-  chatThinking: 'Агент іс-шаралар базасын талдауда...',
-  chatSearching: 'Іс-шаралар мен контактілерді іздеймін:',
+  chatThinking: 'Агент іс-шаралар дерекқорын талдап жатыр...',
+  chatSearching: 'Іс-шаралар мен байланыстарды іздеймін:',
   chatOk: 'Барлық жүйелер жұмыс істейді',
-  chatFallbackNote: 'Жауап Gemini API-сыз жергілікті құрастырылды.',
+  chatFallbackNote: 'Жауап Gemini API қолданбай, жергілікті деректер бойынша құрастырылды.',
   chatError: 'Агенттен жауап алу мүмкін болмады.',
   chatTryLater: 'Сәл кейінірек қайталап көріңіз.',
-  actionFindEvents: 'Іс-шара табу',
+  actionFindEvents: 'Іс-шараларды табу',
   actionAllCities: 'Барлық қалалар',
   actionOnline: 'Онлайн',
   actionThisWeek: 'Осы аптада',
@@ -131,57 +133,59 @@ const kk: Dict = {
   openPost: 'Постты ашу',
   addCalendar: 'Күнтізбеге',
   addedCalendar: 'күнтізбеге сақталды! (демо)',
-  teamContacts: 'Команда контактілері',
+  teamContacts: 'Команда байланыстары',
   openTeamDeck: 'Команданы ашу',
-  moreInPanel: 'тағы — «Іс-шаралар» панелінде',
-  regionalEvents: 'Аймақ іс-шаралары',
-  noEvents: 'Бұл аймақта алдағы іс-шаралар әзірге жоқ.',
+  moreInPanel: 'тағысы — «Іс-шаралар» панелінде',
+  regionalEvents: 'Өңірлік іс-шаралар',
+  noEvents: 'Бұл өңірде алдағы іс-шаралар әзірге жоқ.',
   route: 'Маршрут (Mini-Map)',
   saveEvent: 'Іс-шараны сақтау',
   removeBookmark: 'Бетбелгіні алып тастау',
-  savedToast: 'бетбелгілерге сақталды!',
+  savedToast: 'бетбелгілерге сақталды',
   removedToast: 'сақталғандардан алынды',
   teamDeck: 'Хаб командасы',
   directorySynced: 'Анықтамалық жаңартылды',
-  noTeam: 'Команда туралы деректер әлі жүктелмеген.',
+  noTeam: 'Команда туралы деректер әлі жүктелмеді.',
   showContacts: 'Контактілерді көрсету',
   hideContacts: 'Контактілерді жасыру',
   noContacts: 'Жеке контактілер жарияланбаған — хабтың ресми Instagram-ына жазыңыз.',
   contactsRevealed: 'Контактілер ашылды:',
   weeklyTimetable: 'Апталық кесте',
-  liveCalendar: 'Тірі күнтізбе',
+  liveCalendar: 'Жанды күнтізбе',
   noDayEvents: 'Іс-шаралар жоқ',
   activeBooking: 'Іс-шара',
   close: 'Жабу',
   timeTbd: 'уақыты нақтыланады',
   routeOnMap: 'Картадан маршрутты көрсету',
   routePlanner: 'Маршрут жоспарлағышы',
-  routeStart: 'Бастау',
+  routeStart: 'Бастапқы нүкте',
   routeDest: 'Баратын жер',
-  hubNetwork: 'Аймақтық хабтар желісі',
-  hubMapTitle: 'Қазақстан хабтарының картасы',
+  hubNetwork: 'Өңірлік хабтар желісі',
+  hubMapTitle: 'Қазақстандағы хабтар картасы',
   hubsOnMap: 'Картадағы хабтар',
   expandMap: 'Картаны үлкейту',
   collapseMap: 'Картаны кішірейту',
-  myLocation: 'Менің орным',
+  myLocation: 'Менің орналасқан жерім',
   locating: 'Ізделуде...',
   selectHub: 'Хабты таңдау',
   selectedHub: 'Таңдалған хаб',
-  exactAddress: 'Жергілікті базадағы нақты мекенжай',
-  cityAddressFallback: 'Қала деңгейіндегі мекенжай: көше жергілікті посттардан табылмады',
+  exactAddress: 'Жергілікті дерекқордағы нақты мекенжай',
+  cityAddressFallback: 'Қала деңгейіндегі мекенжай: көше жергілікті жазбалардан табылмады',
   routeDistance: 'Қашықтық',
   meterUnit: 'м',
   kilometerUnit: 'км',
-  open2gisRoute: '2GIS маршруты',
+  open2gisRoute: '2GIS арқылы маршрут',
   locationDenied: 'Браузер геолокацияға рұқсат бермеді.',
   locationUnsupported: 'Бұл браузерде геолокация қолжетімсіз.',
-  locationError: 'Орныңызды анықтау мүмкін болмады.',
+  locationError: 'Орналасқан жеріңізді анықтау мүмкін болмады.',
   plottingRoute: 'Маршрут құрылуда:',
-  plottingInline: 'Чат ішінде интерактивті маршрут құрамын...',
+  plottingInline: 'Чат ішінде интерактивті маршрут құрып жатырмын...',
   switchedHub: 'Белсенді хаб:',
-  openedTeamDeck: 'Команда ашылды!',
-  agentRequestError: 'Агентке сұраныс қатесі',
-  bioSource: 'Деректер хабтың Instagram-ынан жиналған.',
+  openedTeamDeck: 'Команда бөлімі ашылды!',
+  agentRequestError: 'Агент сұранысында қате пайда болды',
+  bioSource: 'Деректер хабтың Instagram парақшасынан жиналған.',
+  askAI: 'ЖИ-дан сұрау',
+  askAIAboutRole: 'Рөлі туралы ЖИ-дан сұрау',
   mon: 'Дүйсенбі', tue: 'Сейсенбі', wed: 'Сәрсенбі', thu: 'Бейсенбі',
   fri: 'Жұма', sat: 'Сенбі', sun: 'Жексенбі',
 };
@@ -356,7 +360,24 @@ export function localizeName(name: string, lang: Lang): string {
 
 /** Localizes the ", Казахстан" country suffix in generated hub addresses. */
 export function localizeAddress(address: string, lang: Lang): string {
-  if (lang === 'kk') return address.replace(/, Казахстан$/, ', Қазақстан');
+  if (lang === 'kk') {
+    return address
+      .replace(/, Казахстан$/, ', Қазақстан')
+      .replace(/(^|[,\s])г\.\s*/g, '$1')
+      .replace(/(^|[,\s])пр\.\s*/g, '$1')
+      .replace(/Мангилик Ел/g, 'Мәңгілік Ел')
+      .replace(/Мәңгілік Ел(\s+\d)/g, 'Мәңгілік Ел даңғылы$1')
+      .replace(/Туркестан/g, 'Түркістан')
+      .replace(/Уральск/g, 'Орал')
+      .replace(/Оскемен/g, 'Өскемен')
+      .replace(/Актобе/g, 'Ақтөбе')
+      .replace(/Кокшетау/g, 'Көкшетау')
+      .replace(/Актау/g, 'Ақтау')
+      .replace(/Кызылорда/g, 'Қызылорда')
+      .replace(/Жезказган/g, 'Жезқазған')
+      .replace(/Талдыкорган/g, 'Талдықорған')
+      .replace(/Костанай/g, 'Қостанай');
+  }
   if (lang === 'en') return address.replace(/, Казахстан$/, ', Kazakhstan');
   return address;
 }

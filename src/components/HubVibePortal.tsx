@@ -2,20 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LayoutGrid, Users, X } from 'lucide-react';
-import { HubOption, HubRegion, UiEvent, UiMember } from '../types';
+import { X, Calendar, MessageSquare, Map } from 'lucide-react';
+import { HubOption, HubRegion, UiEvent, UiMember, MobileTab } from '../types';
 import { Lang, getDict } from '../i18n';
 import GlassmorphicHeader from './GlassmorphicHeader';
 import SleekChat from './SleekChat';
 import EventCarousel from './EventCarousel';
 import TeamDeck from './TeamDeck';
-import MiniMap from './MiniMap';
 import KazakhstanHubMap from './KazakhstanHubMap';
 import AstanaHubFooter from './AstanaHubFooter';
-import DottedSurface from './DottedSurface';
-
-type AuxView = 'events' | 'team';
-type Theme = 'dark' | 'light';
+import MiniMap from './MiniMap';
 
 interface Toast {
   id: number;
@@ -32,32 +28,29 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
   const [activeRegion, setActiveRegion] = useState<HubRegion>(
     hubs[0]?.region ?? 'astana',
   );
-  const [auxView, setAuxView] = useState<AuxView>('events');
+  const [auxView, setAuxView] = useState<'events' | 'team'>('events');
+  const [mobileTab, setMobileTab] = useState<MobileTab>('content');
   const [isSimulating, setIsSimulating] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [directionsEvent, setDirectionsEvent] = useState<UiEvent | null>(null);
-  const [lang, setLang] = useState<Lang>('ru');
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [lang, setLang] = useState<Lang>(readStoredLang);
+  const [theme, setTheme] = useState<'dark' | 'light'>(readStoredTheme);
+  const [externalPrompt, setExternalPrompt] = useState<string | null>(null);
+
   const toastId = useRef(0);
+
+  // Geolocation state — shared between components
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'locating' | 'ready' | 'denied' | 'error' | 'unsupported'>('idle');
 
   const t = getDict(lang);
 
-  // Restore persisted language/theme after hydration (server render can't
-  // read localStorage, so the markup must match the defaults on hydrate).
-  useEffect(() => {
-    try {
-      const storedLang = localStorage.getItem('portal_lang');
-      const storedTheme = localStorage.getItem('portal_theme');
-      if (storedLang === 'ru' || storedLang === 'kk' || storedLang === 'en') {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setLang(storedLang);
-      }
-      if (storedTheme === 'light' || storedTheme === 'dark') {
-        setTheme(storedTheme);
-      }
-    } catch {
-      // localStorage unavailable — keep defaults
-    }
+  const pushToast = useCallback((message: string) => {
+    const id = ++toastId.current;
+    setToasts(prev => [...prev.slice(-2), { id, message }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 3200);
   }, []);
 
   const changeLang = useCallback((next: Lang) => {
@@ -73,42 +66,96 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
     });
   }, []);
 
-  const pushToast = useCallback((message: string) => {
-    const id = ++toastId.current;
-    setToasts(prev => [...prev.slice(-2), { id, message }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, 3200);
-  }, []);
+  // Check for new events since last visit and notify
+  useEffect(() => {
+    try {
+      const lastVisit = localStorage.getItem('last_visit_time');
+      const nowStr = new Date().toISOString();
+      localStorage.setItem('last_visit_time', nowStr);
+
+      if (lastVisit) {
+        const lastVisitDate = new Date(lastVisit);
+        const newEventsCount = events.filter(e => {
+          if (!e.parsedAt) return false;
+          return new Date(e.parsedAt) > lastVisitDate;
+        }).length;
+
+        if (newEventsCount > 0) {
+          const msg = lang === 'kk'
+            ? `Соңғы кіргеніңізден бері ${newEventsCount} жаңа іс-шара табылды! 🔔`
+            : lang === 'en'
+              ? `Found ${newEventsCount} new events since your last visit! 🔔`
+              : `Найдено ${newEventsCount} новых событий с вашего последнего визита! 🔔`;
+
+          setTimeout(() => {
+            pushToast(msg);
+          }, 1500);
+        }
+      } else {
+        // First visit: set initial timestamp
+        localStorage.setItem('last_visit_time', nowStr);
+      }
+    } catch {
+      // LocalStorage unavailable
+    }
+  }, [events, lang, pushToast]);
+
 
   const handleShowDirections = useCallback((event: UiEvent) => {
     setDirectionsEvent(event);
-    pushToast(`${t.plottingRoute} ${event.locationName.split(',')[0]}...`);
+    pushToast(`${t.plottingRoute || 'Строю маршрут к'} ${event.locationName.split(',')[0]}...`);
   }, [pushToast, t.plottingRoute]);
 
-  const regionEvents = events.filter(e => e.hub === activeRegion);
+  const handleLocate = useCallback(() => {
+    if (!('geolocation' in navigator)) {
+      setGeoStatus('unsupported');
+      return;
+    }
+    setGeoStatus('locating');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setGeoStatus('ready');
+      },
+      (error) => {
+        setGeoStatus(error.code === error.PERMISSION_DENIED ? 'denied' : 'error');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  }, []);
 
-  const AUX_TABS: Array<{ key: AuxView; label: string; icon: typeof LayoutGrid }> = [
-    { key: 'events', label: t.tabEvents, icon: LayoutGrid },
-    { key: 'team', label: t.tabTeam, icon: Users },
-  ];
+  const handleAskAI = (prompt: string) => {
+    setExternalPrompt(prompt);
+    setMobileTab('chat');
+  };
+
+  const regionEvents = events.filter(e => e.hub === activeRegion);
+  const regionMembers = members.filter(m => m.hub === activeRegion);
 
   return (
-    <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className="relative min-h-screen bg-neutral-100 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 font-sans transition-colors duration-300">
-        <DottedSurface theme={theme} />
+    <div className="dark">
+      <div className="relative min-h-screen bg-[#060a10] text-neutral-100 font-sans pb-16 lg:pb-0 transition-colors duration-300">
 
+        {/* Header */}
         <GlassmorphicHeader
           hubs={hubs}
           activeRegion={activeRegion}
           onRegionChange={setActiveRegion}
           lang={lang}
+          onLangChange={changeLang}
+          theme={theme}
+          onThemeToggle={toggleTheme}
           t={t}
         />
 
-        {/* Chat-first layout: chat, events, and map share equal column widths. */}
-        <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          <div className="min-w-0 w-full flex">
+        {/* main layout: 3 columns on desktop */}
+        <main className="relative z-10 max-w-[1400px] mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-[340px_1fr_310px] gap-4 items-start">
+
+          {/* ZONE 1 — AI Assistant (Left) */}
+          <div className={`min-w-0 w-full lg:sticky lg:top-[72px] ${mobileTab === 'chat' ? 'block' : 'hidden lg:block'}`}>
             <SleekChat
               hubs={hubs}
               activeRegion={activeRegion}
@@ -120,68 +167,87 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
               setIsSimulating={setIsSimulating}
               lang={lang}
               t={t}
+              externalPrompt={externalPrompt}
+              onClearExternalPrompt={() => setExternalPrompt(null)}
             />
           </div>
 
-          {/* Secondary Deck Panel */}
-          <aside className="w-full min-w-0 flex flex-col gap-4">
-            <div className="flex gap-1.5 bg-white/70 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800/80 p-1.5 rounded-2xl self-start backdrop-blur-md">
-              {AUX_TABS.map(({ key, label, icon: Icon }) => (
-                <button
-                  key={key}
-                  onClick={() => setAuxView(key)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl transition-all duration-300 focus:outline-none ${
-                    auxView === key
-                      ? 'bg-emerald-500 text-neutral-950 font-medium shadow-md shadow-emerald-500/10'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </button>
-              ))}
+          {/* ZONE 2 — Events & Team (Center) */}
+          <section className={`w-full min-w-0 flex flex-col gap-4 ${mobileTab === 'content' ? 'block' : 'hidden lg:block'}`}>
+            {/* Pill Tabs Switcher */}
+            <div className="flex gap-1.5 p-1 bg-neutral-900/60 border border-neutral-800 rounded-2xl self-start">
+              <button
+                onClick={() => setAuxView('events')}
+                className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-mono font-bold rounded-xl transition-all duration-300 ${
+                  auxView === 'events'
+                    ? 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/10'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                📅 {t.tabEvents || 'События'} ({regionEvents.length})
+              </button>
+              <button
+                onClick={() => setAuxView('team')}
+                className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-mono font-bold rounded-xl transition-all duration-300 ${
+                  auxView === 'team'
+                    ? 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/10'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                👥 {t.tabTeam || 'Команда'} ({regionMembers.length})
+              </button>
             </div>
 
+            {/* View Switcher Panel */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={auxView}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.25 }}
+                transition={{ duration: 0.2 }}
               >
-                {auxView === 'events' && (
-                  <div className="flex flex-col gap-4">
-                    <EventCarousel
-                      events={regionEvents}
-                      onShowDirections={handleShowDirections}
-                      onSaveToast={pushToast}
-                      lang={lang}
-                      t={t}
-                    />
-                    <KazakhstanHubMap
-                      activeRegion={activeRegion}
-                      hubs={hubs}
-                      onRegionChange={setActiveRegion}
-                      t={t}
-                    />
-                  </div>
-                )}
-                {auxView === 'team' && (
+                {auxView === 'events' ? (
+                  <EventCarousel
+                    events={regionEvents}
+                    activeRegion={activeRegion}
+                    onShowDirections={handleShowDirections}
+                    lang={lang}
+                    t={t}
+                  />
+                ) : (
                   <TeamDeck
                     members={members}
                     activeRegion={activeRegion}
                     onSaveToast={pushToast}
+                    onAskAI={handleAskAI}
                     lang={lang}
                     t={t}
                   />
                 )}
               </motion.div>
             </AnimatePresence>
+          </section>
+
+          {/* ZONE 3 — Map & Info (Right) */}
+          <aside className={`w-full min-w-0 flex flex-col gap-4 lg:sticky lg:top-[72px] ${mobileTab === 'map' ? 'block' : 'hidden lg:block'}`}>
+            <KazakhstanHubMap
+              activeRegion={activeRegion}
+              hubs={hubs}
+              onRegionChange={setActiveRegion}
+              userLocation={userLocation}
+              geoStatus={geoStatus}
+              onLocate={handleLocate}
+              activeEventsCount={regionEvents.length}
+              activeStaffCount={regionMembers.length}
+              t={t}
+              lang={lang}
+            />
           </aside>
         </main>
 
-        <div className="relative z-10">
+        {/* Footer */}
+        <div className="relative z-10 border-t border-neutral-900 mt-12 bg-neutral-950/40">
           <AstanaHubFooter
             lang={lang}
             onLangChange={changeLang}
@@ -190,14 +256,47 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
           />
         </div>
 
-        {/* Directions Mini-Map Overlay */}
+        {/* Mobile Fixed Tab Bar */}
+        <div className="lg:hidden fixed bottom-0 inset-x-0 h-16 bg-neutral-950/90 border-t border-neutral-900 flex items-center justify-around z-50 backdrop-blur-md">
+          <button
+            onClick={() => setMobileTab('content')}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full font-mono text-[10px] ${
+              mobileTab === 'content' ? 'text-emerald-400 font-bold' : 'text-neutral-500'
+            }`}
+          >
+            <Calendar className="w-5 h-5" />
+            <span>{t.tabEvents || 'События'}</span>
+          </button>
+
+          <button
+            onClick={() => setMobileTab('chat')}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full font-mono text-[10px] ${
+              mobileTab === 'chat' ? 'text-emerald-400 font-bold' : 'text-neutral-500'
+            }`}
+          >
+            <MessageSquare className="w-5 h-5" />
+            <span>{lang === 'kk' ? 'ЖИ-чат' : lang === 'en' ? 'AI Chat' : 'ИИ-чат'}</span>
+          </button>
+
+          <button
+            onClick={() => setMobileTab('map')}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full font-mono text-[10px] ${
+              mobileTab === 'map' ? 'text-emerald-400 font-bold' : 'text-neutral-500'
+            }`}
+          >
+            <Map className="w-5 h-5" />
+            <span>{t.hubMapTitle || 'Карта'}</span>
+          </button>
+        </div>
+
+        {/* Route Mini-Map Overlay */}
         <AnimatePresence>
           {directionsEvent && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-neutral-950/60 dark:bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+              className="fixed inset-0 z-[60] bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4"
               onClick={() => setDirectionsEvent(null)}
             >
               <motion.div
@@ -209,8 +308,8 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
               >
                 <button
                   onClick={() => setDirectionsEvent(null)}
-                  className="absolute -top-2 -right-2 z-10 p-1.5 rounded-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
-                  aria-label={t.close}
+                  className="absolute -top-2 -right-2 z-10 p-1.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors"
+                  aria-label={t.close || 'Закрыть'}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -219,6 +318,7 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
                   eventName={directionsEvent.title}
                   locationName={directionsEvent.locationName}
                   t={t}
+                  lang={lang}
                 />
               </motion.div>
             </motion.div>
@@ -234,7 +334,7 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 30 }}
-                className="px-4 py-2.5 rounded-xl bg-white/95 dark:bg-neutral-900/95 border border-emerald-500/40 dark:border-emerald-500/30 text-xs font-sans text-neutral-800 dark:text-neutral-200 shadow-2xl backdrop-blur-md max-w-xs"
+                className="px-4 py-2.5 rounded-xl bg-neutral-900/95 border border-emerald-500/40 text-xs font-mono text-neutral-200 shadow-2xl backdrop-blur-md max-w-xs"
               >
                 {toast.message}
               </motion.div>
@@ -244,4 +344,32 @@ export default function HubVibePortal({ events, members, hubs }: HubVibePortalPr
       </div>
     </div>
   );
+}
+
+function readStoredLang(): Lang {
+  if (typeof window === 'undefined') {
+    return 'ru';
+  }
+
+  try {
+    const storedLang = localStorage.getItem('portal_lang');
+    return storedLang === 'ru' || storedLang === 'kk' || storedLang === 'en'
+      ? storedLang
+      : 'ru';
+  } catch {
+    return 'ru';
+  }
+}
+
+function readStoredTheme(): 'dark' | 'light' {
+  if (typeof window === 'undefined') {
+    return 'dark';
+  }
+
+  try {
+    const storedTheme = localStorage.getItem('portal_theme');
+    return storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : 'dark';
+  } catch {
+    return 'dark';
+  }
 }

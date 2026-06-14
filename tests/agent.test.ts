@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  astanaHubKnowledgeReply,
   buildSystemPrompt,
+  fallbackAgentReply,
   isStaffQuestion,
   staffAgentReply,
 } from "../src/lib/agent";
@@ -141,6 +143,30 @@ test("buildSystemPrompt labels exact people separately from official contacts", 
   assert.match(prompt, /record_type = "official_hub_contact"/);
   assert.match(prompt, /"record_type": "person"/);
   assert.match(prompt, /"record_type": "official_hub_contact"/);
+});
+
+test("astanaHubKnowledgeReply answers program questions without a city", () => {
+  const techOrdaReply = astanaHubKnowledgeReply("Как получить ИТ-грант Tech Orda?", "RU");
+  const taxReply = astanaHubKnowledgeReply("Какие налоговые льготы у резидентов Astana Hub?", "RU");
+
+  assert.match(techOrdaReply ?? "", /600 000 тенге/);
+  assert.match(techOrdaReply ?? "", /Tech Orda/);
+  assert.match(taxReply ?? "", /КПН/);
+  assert.match(taxReply ?? "", /НДС/);
+});
+
+test("fallbackAgentReply handles Astana Hub knowledge before asking for city", () => {
+  const reply = fallbackAgentReply({
+    latestMessage: "Расскажи подробнее в деталях: Как стать резидентом Astana Hub?",
+    events: [],
+    staff: [],
+    region: null,
+    city: null,
+    lang: "RU",
+  });
+
+  assert.match(reply, /Как стать резидентом Astana Hub/);
+  assert.doesNotMatch(reply, /Уточните город/);
 });
 
 function staff(overrides: Partial<HubStaff>): HubStaff {

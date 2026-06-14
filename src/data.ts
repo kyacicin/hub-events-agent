@@ -217,6 +217,7 @@ export function toUiEvent(event: HubEvent): UiEvent {
       event.address ??
       event.zoom_link ??
       `Онлайн — ссылка в Instagram ${event.instagram}`,
+    parsedAt: event.parsed_at,
   };
 }
 

@@ -1,4 +1,4 @@
-# Hub Events Agent 
+# Hub Events Agent
 
 > AI-агент для поиска мероприятий региональных хабов Astana Hub по всему Казахстану
 
@@ -87,8 +87,11 @@ hub-events-agent/
 │   ├── app/
 │   │   ├── page.tsx          # Главная страница (чат)
 │   │   └── api/
-│   │       ├── chat/route.ts  # AI агент endpoint
-│   │       └── scrape/route.ts # Ручной запуск парсера
+│   │       ├── chat/route.ts        # AI агент endpoint
+│   │       ├── events/route.ts      # Список событий с ?city= / ?region=
+│   │       ├── staff/route.ts       # Список сотрудников с ?city= / ?region=
+│   │       ├── scrape/route.ts      # Ручной запуск парсера
+│   │       └── cron/scrape/route.ts # Vercel Cron endpoint
 │   ├── components/
 │   │   ├── ChatInterface.tsx # Чат UI
 │   │   └── EventCard.tsx     # Карточка события
@@ -142,7 +145,7 @@ hub-events-agent/
 -  Описание и детали
 -  Хэштеги
 -  Адрес (если указан)
--  Формат: офлайн / онлайн 
+-  Формат: офлайн / онлайн
 
 ---
 
@@ -170,6 +173,7 @@ APIFY_RESULTS_LIMIT=5
 APIFY_ONLY_POSTS_NEWER_THAN=30 days
 PROCESS_LIMIT=
 SCRAPE_SECRET=your_scrape_secret
+CRON_SECRET=your_cron_secret
 ```
 
 ```bash
@@ -206,7 +210,7 @@ npm i -g vercel
 vercel
 
 # Добавь env переменные в Vercel Dashboard:
-# GEMINI_API_KEY, APIFY_API_TOKEN, SCRAPE_SECRET
+# GEMINI_API_KEY, APIFY_API_TOKEN, SCRAPE_SECRET, CRON_SECRET
 # (KV_REST_API_URL / KV_REST_API_TOKEN добавятся сами при подключении Vercel KV)
 ```
 
@@ -214,13 +218,34 @@ vercel
 - `data/events.json`
 - `data/staff.json`
 
-`POST /api/scrape` защищён заголовком `x-scrape-secret` со значением `SCRAPE_SECRET` и пишет в durable storage через `src/lib/dataStore.ts`:
+`POST /api/scrape` защищён заголовком `x-scrape-secret` со значением `SCRAPE_SECRET` и пишет в durable storage через `src/lib/dataStore.ts`.
+
+`/api/cron/scrape` — endpoint для Vercel Cron. Он поддерживает `GET` для cron-запусков Vercel и `POST` для ручной проверки. Защита:
+
+- `Authorization: Bearer <CRON_SECRET>` для Vercel Cron;
+- или `x-scrape-secret: <SCRAPE_SECRET>`;
+- или `?secret=<SCRAPE_SECRET>` для ручной диагностики.
 
 - если заданы `KV_REST_API_URL` и `KV_REST_API_TOKEN` (Vercel KV / Upstash) — данные пишутся в KV, а `/api/chat` и главная страница читают их в runtime (главная — с ISR `revalidate = 300`), поэтому cron-обновления видны без редеплоя;
 - локально (без KV) запись идёт в `data/*.json`, а чтение — из bundled-seed;
 - на Vercel без KV запись осознанно падает с понятной ошибкой, а не молча теряет результат в эфемерной serverless-FS.
 
 Чтобы включить production auto-refresh, подключи Vercel KV (или Upstash Redis) к проекту — переменные `KV_REST_API_URL` / `KV_REST_API_TOKEN` подставляются автоматически.
+
+`vercel.json` запускает `/api/cron/scrape` каждые 6 часов.
+
+---
+
+## API routes
+
+| Route | Метод | Назначение |
+|-------|-------|------------|
+| `/api/chat` | `POST` | Основной endpoint агента: определяет город, фильтрует события/сотрудников и отвечает в чате |
+| `/api/events?city=Тараз` | `GET` | Список предстоящих событий, фильтр по `city` или `region` |
+| `/api/events?city=Тараз&includePast=true` | `GET` | Список событий с прошедшими записями для диагностики |
+| `/api/staff?city=Тараз` | `GET` | Список сотрудников и официальных контактов, фильтр по `city` или `region` |
+| `/api/scrape` | `POST` / `GET` | Совместимый ручной запуск парсера |
+| `/api/cron/scrape` | `GET` / `POST` | Защищённый cron endpoint для автообновления |
 
 ---
 

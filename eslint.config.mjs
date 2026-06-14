@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Separate imported apps/snapshots are not part of this Next project.
+    "UI/**",
+    "hub-events-agent/**",
   ]),
 ]);
 

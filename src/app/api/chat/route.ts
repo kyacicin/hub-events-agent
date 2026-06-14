@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  astanaHubKnowledgeReply,
   callGeminiAgent,
   fallbackAgentReply,
   isStaffQuestion,
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       message?: unknown;
       messages?: unknown;
+      lang?: unknown;
     };
     const messages = parseMessages(body);
 
@@ -35,10 +37,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const clientLang = typeof body.lang === "string" ? body.lang : undefined;
     const latestMessage = lastUserMessage(messages)?.content ?? "";
     const today = dateKey(new Date());
     const allRegions = wantsAllRegions(latestMessage);
     const staffQuestion = isStaffQuestion(latestMessage);
+    const knowledgeReply = astanaHubKnowledgeReply(latestMessage, clientLang);
     const region = allRegions ? null : detectRegion(messages);
     const city = cityForRegion(region);
     const [allEvents, allStaff] = await Promise.all([
@@ -58,13 +62,16 @@ export async function POST(request: Request) {
     let reply: string;
     let modelStatus: "ok" | "fallback" = "ok";
 
-    if (staffQuestion) {
+    if (knowledgeReply) {
+      reply = knowledgeReply;
+    } else if (staffQuestion) {
       reply = staffAgentReply({
         latestMessage,
         staff,
         region,
         city,
         allRegions,
+        lang: clientLang,
       });
     } else {
       try {
@@ -75,6 +82,7 @@ export async function POST(request: Request) {
           today,
           region,
           city,
+          lang: clientLang,
         });
       } catch (error) {
         modelStatus = "fallback";
@@ -85,6 +93,7 @@ export async function POST(request: Request) {
           region,
           city,
           allRegions,
+          lang: clientLang,
         });
         console.warn(error instanceof Error ? error.message : String(error));
       }
@@ -92,7 +101,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       reply,
-      events: staffQuestion ? [] : events,
+      events: staffQuestion || knowledgeReply ? [] : events,
       staff,
       region,
       city,
